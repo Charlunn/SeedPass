@@ -1,0 +1,27 @@
+[package]
+name = "passworder-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Tiny offline deterministic password derivation core."
+readme = "README.md"
+keywords = ["password", "offline", "deterministic", "pbkdf2"]
+categories = ["cryptography"]
+
+[lib]
+name = "passworder_core"
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[features]
+default = ["random"]
+random = ["dep:getrandom"]
+
+[dependencies]
+hmac = "0.12"
+pbkdf2 = { version = "0.12", features = ["hmac"] }
+sha2 = "0.10"
+unicode-normalization = "0.1"
+getrandom = { version = "0.2", optional = true }
+
+[dev-dependencies]
+hex = "0.4"

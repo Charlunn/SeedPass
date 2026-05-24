@@ -1,4 +1,5 @@
 /target/
+/releases/
 *.pdb
 *.crate
 Cargo.toml.orig

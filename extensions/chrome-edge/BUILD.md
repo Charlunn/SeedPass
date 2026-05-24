@@ -19,7 +19,24 @@ your default Rust toolchain works.
 1. Open `chrome://extensions` or `edge://extensions`.
 2. Enable Developer mode.
 3. Choose "Load unpacked".
-4. Select `extensions/chrome-edge`.
+4. Select `extensions/chrome-edge` during development, or select the unpacked
+   release directory created by `scripts/package-extension.ps1`.
+
+Edge/Chrome do not install a raw `.zip` directly through "Load unpacked".
+Use the zip for distribution, then unzip it and select the extracted folder.
+
+## Package Release Artifact
+
+From the repository root:
+
+```powershell
+.\scripts\package-extension.ps1 -Version 0.1.0
+```
+
+This creates:
+
+- `releases/passworder-chrome-edge-v0.1.0.zip`
+- `releases/passworder-chrome-edge-v0.1.0/`
 
 ## First Use
 

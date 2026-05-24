@@ -1,4 +1,10 @@
-# Chrome/Edge 插件
+# SeedPass Chrome/Edge 插件
+
+SeedPass is an offline deterministic password extension. One strong seed phrase
+can reproduce passwords for websites without cloud sync.
+
+SeedPass 是一个离线确定性密码插件。一个足够强的基密码可以在不依赖云同步的
+情况下复现各网站密码。
 
 这个目录是 Passworder Core 的 Chrome/Edge Manifest V3 前端。插件不实现第二套
 密码算法，而是调用 Rust 核心编译出的 WebAssembly。
@@ -16,6 +22,23 @@
 - content script 自动填充密码框。
 - 密码框聚焦时显示页面内填充建议。
 - 未解锁时在页面内显示 6 位 PIN 输入框，输满自动解锁并填充。
+- SeedPass 名称和 `0.4.0` manifest。
+- 当前网站多记录保存、搜索和切换。
+- 默认按网站生成；账号标识/备注只用于管理。
+- 可为单条记录切换为“仅按账号标识生成”。
+
+Implemented:
+
+- Manifest V3 extension for Edge and Chrome.
+- Rust/WASM password generation.
+- Encrypted local seed vault in `chrome.storage.local`.
+- Short unlock session in the background service worker.
+- Inline fill suggestion on password field focus.
+- 6-digit PIN quick unlock and fill.
+- SeedPass name and `0.4.0` manifest.
+- Multiple current-site records with search and switching.
+- Default generation by website; account label/note are only for organization.
+- Optional per-record "generate by account label only" mode.
 
 ## 使用体验
 
@@ -24,9 +47,13 @@
 3. 插件识别当前网站身份，通常是 `github.com`。
 4. 如果保险库已锁定，用户输入本地解锁密码 / PIN。
 5. 插件把加密保存的基密码解密到 background 内存中。
-6. 插件使用 `基密码 + 网站身份 + 账号标识` 派生站点密码。
+6. 默认情况下，插件使用 `基密码 + 网站身份` 派生站点密码。
 7. content script 填充当前页面的密码输入框。
 8. 解锁超时后，内存中的明文基密码自动清除。
+
+If a record is set to "generate by account label only", SeedPass uses the account
+label instead of the website name for that record. The record is still shown under
+the bound website.
 
 ## 基密码
 

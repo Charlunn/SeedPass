@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Passworder &#23494;&#30721;&#22120;</title>
+    <title>SeedPass</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="shell">
       <header>
-        <p class="eyebrow">Passworder</p>
+        <p class="eyebrow">SeedPass</p>
         <h1>&#31163;&#32447;&#23494;&#30721;&#22635;&#20805;</h1>
         <p id="status" class="status">&#27491;&#22312;&#21152;&#36733;...</p>
       </header>
@@ -81,6 +81,17 @@
           &#36134;&#21495;&#26631;&#35782;
           <input id="account" type="text" placeholder="&#21487;&#36873;&#65306;&#37038;&#31665;&#12289;&#29992;&#25143;&#21517;&#25110;&#22791;&#27880;" />
         </label>
+        <label>
+          &#23494;&#30721;&#22791;&#27880;
+          <input id="note" type="text" placeholder="&#21487;&#36873;&#65306;&#20027;&#21495;&#12289;&#24037;&#20316;&#12289;&#20020;&#26102;&#29992;" />
+        </label>
+        <fieldset class="mode-field">
+          <legend>&#23494;&#30721;&#29983;&#25104;&#26041;&#24335;</legend>
+          <label class="check"><input name="mode" value="domain" type="radio" checked /> &#25353;&#32593;&#31449;&#29983;&#25104;&#65288;&#40664;&#35748;&#25512;&#33616;&#65289;</label>
+          <label class="check"><input name="mode" value="account" type="radio" /> &#20165;&#25353;&#36134;&#21495;&#26631;&#35782;&#29983;&#25104;</label>
+          <p id="mode-help" class="hint"></p>
+        </fieldset>
+        <input id="record-id" type="hidden" />
         <div class="policy-grid">
           <label>
             &#23494;&#30721;&#38271;&#24230;
@@ -91,7 +102,14 @@
           <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
           <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
         </div>
-        <button id="fill-submit">&#29983;&#25104;&#24182;&#22635;&#20805;</button>
+        <button id="fill-submit">&#20445;&#23384;&#24182;&#22635;&#20805;</button>
+        <button id="new-record" class="secondary">&#28155;&#21152;&#19968;&#26465;&#35760;&#24405;</button>
+        <button id="delete-record" class="secondary">&#21024;&#38500;&#24403;&#21069;&#35760;&#24405;</button>
+        <label>
+          &#25628;&#32034;&#24050;&#20445;&#23384;&#35760;&#24405;
+          <input id="record-search" type="search" placeholder="&#36755;&#20837;&#32593;&#31449;&#12289;&#36134;&#21495;&#26631;&#35782;&#25110;&#22791;&#27880;" />
+        </label>
+        <div id="record-list" class="record-list"></div>
         <button id="lock-submit" class="secondary">&#31435;&#21363;&#38145;&#23450;</button>
       </section>
 

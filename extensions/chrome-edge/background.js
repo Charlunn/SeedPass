@@ -40,7 +40,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   try {
     const site = await getCurrentSite();
     const settings = await getSiteSettings(site.identity);
-    await fillCurrentTab(site, settings.account ?? "", settings.policy ?? DEFAULT_POLICY);
+    await fillCurrentTab(site, getSiteRecord(settings));
   } catch {
     // Shortcut failures should not expose secrets or noisy errors.
   }
@@ -60,34 +60,43 @@ async function handleMessage(message, sender) {
     case "get-site-settings": {
       const site = await getCurrentSite();
       const settings = await getSiteSettings(site.identity);
-      return { site, settings };
+      return { site, settings, records: getSiteRecords(settings) };
     }
     case "save-site-settings":
-      await saveSiteSettings(message.siteIdentity, {
-        account: message.account ?? "",
-        policy: normalizePolicy(message.policy)
-      });
-      return {};
+      return {
+        settings: await saveSiteRecord(message.siteIdentity, {
+          id: message.recordId,
+          account: message.account ?? "",
+          note: message.note ?? "",
+          mode: message.mode ?? "domain",
+          policy: normalizePolicy(message.policy)
+        })
+      };
+    case "delete-site-record":
+      return { settings: await deleteSiteRecord(message.siteIdentity, message.recordId) };
     case "fill-password": {
       const site = await getCurrentSite();
-      const policy = normalizePolicy(message.policy);
-      await saveSiteSettings(site.identity, {
+      const settings = await saveSiteRecord(site.identity, {
+        id: message.recordId,
         account: message.account ?? "",
-        policy
+        note: message.note ?? "",
+        mode: message.mode ?? "domain",
+        policy: normalizePolicy(message.policy)
       });
-      await fillCurrentTab(site, message.account ?? "", policy);
+      const record = getSiteRecord(settings, message.recordId);
+      await fillCurrentTab(site, record);
       return {};
     }
     case "inline-state":
       return getInlineState(sender);
     case "inline-fill":
-      return deriveForSender(sender);
+      return deriveForSender(sender, message.recordId);
     case "inline-unlock-and-fill":
       await unlockVault({
         unlockPassword: message.pin,
         timeoutMinutes: message.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES
       });
-      return deriveForSender(sender);
+      return deriveForSender(sender, message.recordId);
     default:
       throw new Error("\u672a\u77e5\u7684\u63d2\u4ef6\u8bf7\u6c42\u3002");
   }
@@ -107,7 +116,7 @@ async function getInlineState(sender) {
   const site = getSiteFromSender(sender);
   const settings = await getSiteSettings(site.identity);
   const state = await getState();
-  return { site, settings, ...state };
+  return { site, settings, records: getSiteRecords(settings), ...state };
 }
 
 async function setupVault(message) {
@@ -132,20 +141,17 @@ async function unlockVault(message) {
   return getState();
 }
 
-async function deriveForSender(sender) {
+async function deriveForSender(sender, recordId) {
   assertUnlocked();
   const site = getSiteFromSender(sender);
   const settings = await getSiteSettings(site.identity);
-  const password = await derivePasswordForSite(
-    site.identity,
-    settings.account ?? "",
-    settings.policy ?? DEFAULT_POLICY
-  );
+  const record = getSiteRecord(settings, recordId);
+  const password = await derivePasswordForSite(site.identity, record);
   return { password, site, settings };
 }
 
-async function fillCurrentTab(site, account, policy) {
-  const password = await derivePasswordForSite(site.identity, account, policy);
+async function fillCurrentTab(site, record) {
+  const password = await derivePasswordForSite(site.identity, record);
 
   await chrome.scripting.executeScript({
     target: { tabId: site.tabId },
@@ -160,15 +166,18 @@ async function fillCurrentTab(site, account, policy) {
   }
 }
 
-async function derivePasswordForSite(siteIdentityValue, account, policy) {
+async function derivePasswordForSite(siteIdentityValue, record) {
   assertUnlocked();
   await ensureCore();
-  const normalizedPolicy = normalizePolicy(policy);
+  const normalizedPolicy = normalizePolicy(record.policy);
+  const generationName = record.mode === "account"
+    ? requireNonEmpty(record.account, "\u8d26\u53f7\u6807\u8bc6")
+    : siteIdentityValue;
 
   return derivePassword(
     unlockedSecret,
-    siteIdentityValue,
-    account || undefined,
+    generationName,
+    undefined,
     undefined,
     210000,
     normalizedPolicy.length,
@@ -313,7 +322,7 @@ function siteIdentity(hostname) {
 
 async function getSiteSettings(siteIdentityValue) {
   const all = (await storageGet(SETTINGS_KEY)) ?? {};
-  return all[siteIdentityValue] ?? { account: "", policy: DEFAULT_POLICY };
+  return normalizeSiteSettings(all[siteIdentityValue]);
 }
 
 async function saveSiteSettings(siteIdentityValue, settings) {
@@ -324,6 +333,90 @@ async function saveSiteSettings(siteIdentityValue, settings) {
   all[siteIdentityValue] = settings;
   await storageSet(SETTINGS_KEY, all);
 }
+
+async function saveSiteRecord(siteIdentityValue, record) {
+  const current = await getSiteSettings(siteIdentityValue);
+  const records = getSiteRecords(current);
+  const now = Date.now();
+  const next = normalizeRecord({
+    ...record,
+    id: record.id || crypto.randomUUID(),
+    createdAt: records.find((item) => item.id === record.id)?.createdAt ?? now,
+    updatedAt: now
+  });
+  const index = records.findIndex((item) => item.id === next.id);
+  if (index >= 0) {
+    records[index] = next;
+  } else {
+    records.unshift(next);
+  }
+  const settings = {
+    account: next.account,
+    policy: next.policy,
+    records
+  };
+  await saveSiteSettings(siteIdentityValue, settings);
+  return settings;
+}
+
+async function deleteSiteRecord(siteIdentityValue, recordId) {
+  const current = await getSiteSettings(siteIdentityValue);
+  const records = getSiteRecords(current).filter((record) => record.id !== recordId);
+  const settings = {
+    account: records[0]?.account ?? "",
+    policy: records[0]?.policy ?? DEFAULT_POLICY,
+    records
+  };
+  await saveSiteSettings(siteIdentityValue, settings);
+  return settings;
+}
+
+function normalizeSiteSettings(settings = {}) {
+  if (Array.isArray(settings.records)) {
+    const records = settings.records.map(normalizeRecord);
+    return {
+      account: settings.account ?? records[0]?.account ?? "",
+      policy: normalizePolicy(settings.policy ?? records[0]?.policy ?? DEFAULT_POLICY),
+      records
+    };
+  }
+  return {
+    account: settings.account ?? "",
+    policy: normalizePolicy(settings.policy ?? DEFAULT_POLICY),
+    records: [
+      normalizeRecord({
+        account: settings.account ?? "",
+        note: "",
+        mode: "domain",
+        policy: settings.policy ?? DEFAULT_POLICY
+      })
+    ]
+  };
+}
+
+function getSiteRecords(settings = {}) {
+  return normalizeSiteSettings(settings).records;
+}
+
+function getSiteRecord(settings, recordId) {
+  const records = getSiteRecords(settings);
+  return records.find((record) => record.id === recordId) ?? records[0] ?? normalizeRecord();
+}
+
+function normalizeRecord(record = {}) {
+  const mode = record.mode === "account" ? "account" : "domain";
+  const account = String(record.account ?? "").trim();
+  return {
+    id: record.id || "",
+    account,
+    note: String(record.note ?? "").trim(),
+    mode,
+    policy: normalizePolicy(record.policy ?? DEFAULT_POLICY),
+    createdAt: Number(record.createdAt ?? 0),
+    updatedAt: Number(record.updatedAt ?? 0)
+  };
+}
+
 
 function normalizePolicy(policy = {}) {
   const normalized = {

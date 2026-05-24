@@ -4,6 +4,7 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
   let activeInput = null;
   let panel = null;
   let hideTimer = null;
+  let selectedRecordId = "";
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type !== "passworder-fill") {
@@ -59,7 +60,7 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
 
     const title = panel.querySelector("[data-title]");
     const body = panel.querySelector("[data-body]");
-    title.textContent = "Passworder";
+    title.textContent = "SeedPass";
 
     if (!state.ok) {
       body.innerHTML = "";
@@ -76,12 +77,17 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
     if (state.unlocked) {
       body.innerHTML = "";
       body.append(textBlock(`\u5df2\u89e3\u9501\uff1a${state.site.identity}`));
-      body.append(actionButton("\u586b\u5145\u5bc6\u7801", fillFromUnlocked));
+      for (const record of state.records ?? []) {
+        body.append(recordButton(record, true));
+      }
       return;
     }
 
     body.innerHTML = "";
     body.append(textBlock(`\u4e3a ${state.site.identity} \u8f93\u5165 6 \u4f4d PIN \u5feb\u901f\u89e3\u9501`));
+    for (const record of state.records ?? []) {
+      body.append(recordButton(record, false));
+    }
     const pinRow = document.createElement("div");
     pinRow.className = "passworder-pin-row";
     const boxes = Array.from({ length: 6 }, () => {
@@ -104,6 +110,7 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
       try {
         const response = await sendMessage({
           type: "inline-unlock-and-fill",
+          recordId: selectedRecordId,
           pin,
           timeoutMinutes: state.defaultTimeoutMinutes
         });
@@ -121,9 +128,9 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
     boxes[0]?.focus();
   }
 
-  async function fillFromUnlocked() {
+  async function fillFromUnlocked(recordId = "") {
     try {
-      const response = await sendMessage({ type: "inline-fill" });
+      const response = await sendMessage({ type: "inline-fill", recordId });
       fillInput(activeInput, response.password);
       hidePanel();
     } catch (error) {
@@ -252,6 +259,17 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
     button.textContent = text;
     button.addEventListener("click", onClick);
     return button;
+  }
+
+  function recordButton(record, unlocked) {
+    const label = record.account || record.note || "\u9ed8\u8ba4\uff1a\u6309\u7f51\u7ad9\u751f\u6210";
+    const mode = record.mode === "account" ? "\u6309\u8d26\u53f7\u6807\u8bc6\u751f\u6210" : "\u6309\u7f51\u7ad9\u751f\u6210";
+    return actionButton(`${label} \u00b7 ${mode}`, () => {
+      selectedRecordId = record.id || "";
+      if (unlocked) {
+        fillFromUnlocked(selectedRecordId);
+      }
+    });
   }
 
   function wirePinBoxes(boxes, onComplete) {

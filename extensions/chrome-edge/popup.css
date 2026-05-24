@@ -67,6 +67,21 @@ small {
   padding: 0;
 }
 
+.mode-field {
+  border: 1px solid rgba(74, 51, 24, 0.16);
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+}
+
+.mode-field legend {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
 .pin-field legend {
   font-size: 12px;
   font-weight: 800;
@@ -172,4 +187,16 @@ button.secondary {
 
 .message {
   min-height: 18px;
+}
+
+.record-list {
+  display: grid;
+  gap: 7px;
+}
+
+.record-item {
+  border-radius: 12px;
+  font-size: 12px;
+  padding: 8px 10px;
+  text-align: left;
 }

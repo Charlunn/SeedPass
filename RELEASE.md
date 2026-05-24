@@ -1,5 +1,29 @@
 # 发布说明
 
+## chrome-edge-v0.4.0
+
+SeedPass 增量版，基于 `chrome-edge-v0.3.0` 的交互继续添加记录管理。
+
+SeedPass incremental release based on the `chrome-edge-v0.3.0` interaction model.
+
+包含：
+
+- 插件名称改为 SeedPass。
+- 保留 0.3.0 的 popup 和页面内建议风格。
+- 默认按网站生成密码；账号标识和备注不再默认影响密码。
+- 单条记录可切换为“仅按账号标识生成”。
+- 当前网站支持保存多条记录，并可按账号标识/备注搜索和切换。
+- 密码框聚焦时显示当前网站记录；已解锁直接填充，未解锁输入 6 位 PIN 后填充。
+
+Included:
+
+- Extension name changed to SeedPass.
+- Keeps the v0.3.0 popup and inline suggestion style.
+- Default generation uses the website; account label and note no longer affect the password by default.
+- Each record can explicitly switch to "generate by account label only".
+- The current site can keep multiple records with simple search and switching.
+- Password-field focus shows current-site records; unlocked fills directly, locked fills after 6-digit PIN unlock.
+
 ## chrome-edge-v0.3.0
 
 插件交互升级。

@@ -84,7 +84,12 @@ const elements = {
   unlockTimeout: document.querySelector("#unlock-timeout"),
   siteIdentity: document.querySelector("#site-identity"),
   siteHostname: document.querySelector("#site-hostname"),
+  recordId: document.querySelector("#record-id"),
   account: document.querySelector("#account"),
+  note: document.querySelector("#note"),
+  modeHelp: document.querySelector("#mode-help"),
+  recordSearch: document.querySelector("#record-search"),
+  recordList: document.querySelector("#record-list"),
   policyLength: document.querySelector("#policy-length"),
   policyLowercase: document.querySelector("#policy-lowercase"),
   policyUppercase: document.querySelector("#policy-uppercase"),
@@ -99,6 +104,7 @@ const pinGroups = {
 };
 
 let currentSite = null;
+let siteRecords = [];
 
 document.querySelector("#generate-secret").addEventListener("click", () => {
   elements.setupSecret.value = generateMnemonic(24);
@@ -137,10 +143,39 @@ document.querySelector("#fill-submit").addEventListener("click", async () => {
     const policy = readPolicy();
     await sendMessage({
       type: "fill-password",
+      recordId: elements.recordId.value,
       account: elements.account.value.trim(),
+      note: elements.note.value.trim(),
+      mode: selectedMode(),
       policy
     });
     showMessage("密码已填充。");
+  });
+});
+
+document.querySelector("#new-record").addEventListener("click", () => {
+  writeRecord({
+    id: "",
+    account: "",
+    note: "",
+    mode: "domain",
+    policy: DEFAULT_POLICY
+  });
+  showMessage("\u6b63\u5728\u6dfb\u52a0\u65b0\u8bb0\u5f55\u3002");
+});
+
+document.querySelector("#delete-record").addEventListener("click", async () => {
+  if (!currentSite || !elements.recordId.value) {
+    return;
+  }
+  await runAction(async () => {
+    await sendMessage({
+      type: "delete-site-record",
+      siteIdentity: currentSite.identity,
+      recordId: elements.recordId.value
+    });
+    await loadSiteSettings();
+    showMessage("\u8bb0\u5f55\u5df2\u5220\u9664\u3002");
   });
 });
 
@@ -154,6 +189,7 @@ document.querySelector("#lock-submit").addEventListener("click", async () => {
 
 for (const input of [
   elements.account,
+  elements.note,
   elements.policyLength,
   elements.policyLowercase,
   elements.policyUppercase,
@@ -162,6 +198,15 @@ for (const input of [
 ]) {
   input.addEventListener("change", saveSettings);
 }
+
+for (const input of document.querySelectorAll('input[name="mode"]')) {
+  input.addEventListener("change", () => {
+    updateModeHelp();
+    saveSettings();
+  });
+}
+
+elements.recordSearch.addEventListener("input", renderRecordList);
 
 await refresh();
 
@@ -210,8 +255,15 @@ async function loadSiteSettings() {
   elements.siteHostname.textContent = currentSite.hostname;
 
   const settings = response.settings ?? {};
-  elements.account.value = settings.account ?? "";
-  writePolicy(settings.policy ?? DEFAULT_POLICY);
+  siteRecords = response.records ?? [];
+  writeRecord(siteRecords[0] ?? {
+    id: "",
+    account: settings.account ?? "",
+    note: "",
+    mode: "domain",
+    policy: settings.policy ?? DEFAULT_POLICY
+  });
+  renderRecordList();
 }
 
 async function saveSettings() {
@@ -220,15 +272,69 @@ async function saveSettings() {
   }
 
   try {
-    await sendMessage({
+    const response = await sendMessage({
       type: "save-site-settings",
       siteIdentity: currentSite.identity,
+      recordId: elements.recordId.value,
       account: elements.account.value.trim(),
+      note: elements.note.value.trim(),
+      mode: selectedMode(),
       policy: readPolicy()
     });
+    siteRecords = response.settings?.records ?? siteRecords;
+    if (!elements.recordId.value) {
+      writeRecord(siteRecords[0]);
+    }
+    renderRecordList();
   } catch (error) {
     showMessage(error.message, true);
   }
+}
+
+function writeRecord(record) {
+  elements.recordId.value = record.id ?? "";
+  elements.account.value = record.account ?? "";
+  elements.note.value = record.note ?? "";
+  document.querySelector(`input[name="mode"][value="${record.mode === "account" ? "account" : "domain"}"]`).checked = true;
+  writePolicy(record.policy ?? DEFAULT_POLICY);
+  updateModeHelp();
+}
+
+function renderRecordList() {
+  elements.recordList.innerHTML = "";
+  const query = elements.recordSearch.value.trim().toLowerCase();
+  const records = siteRecords.filter((record) =>
+    [currentSite?.identity, record.account, record.note, record.mode]
+      .join(" ")
+      .toLowerCase()
+      .includes(query)
+  );
+  if (!records.length) {
+    const empty = document.createElement("small");
+    empty.textContent = "\u6ca1\u6709\u5339\u914d\u7684\u8bb0\u5f55\u3002";
+    elements.recordList.append(empty);
+    return;
+  }
+  for (const record of records) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "record-item secondary";
+    const label = record.account || currentSite?.identity || "\u9ed8\u8ba4\u8bb0\u5f55";
+    const mode = record.mode === "account" ? "\u6309\u8d26\u53f7\u6807\u8bc6\u751f\u6210" : "\u6309\u7f51\u7ad9\u751f\u6210";
+    button.textContent = `${label} · ${mode}${record.note ? ` · ${record.note}` : ""}`;
+    button.addEventListener("click", () => writeRecord(record));
+    elements.recordList.append(button);
+  }
+}
+
+function selectedMode() {
+  return document.querySelector('input[name="mode"]:checked')?.value ?? "domain";
+}
+
+function updateModeHelp() {
+  elements.modeHelp.textContent = selectedMode() === "account"
+    ? "\u5f53\u524d\u8bb0\u5f55\u4ec5\u6309\u8d26\u53f7\u6807\u8bc6\u751f\u6210\u3002\u6362\u8bbe\u5907\u65f6\u8bf7\u8f93\u5165\u540c\u4e00\u4e2a\u8d26\u53f7\u6807\u8bc6\u3002"
+    : "\u5f53\u524d\u8bb0\u5f55\u6309\u7f51\u7ad9\u751f\u6210\u3002\u8d26\u53f7\u6807\u8bc6\u548c\u5907\u6ce8\u53ea\u7528\u4e8e\u7ba1\u7406\uff0c\u4e0d\u6539\u53d8\u5bc6\u7801\u3002";
 }
 
 function readPolicy() {

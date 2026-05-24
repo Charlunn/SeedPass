@@ -3,82 +3,96 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Passworder 密码器</title>
+    <title>Passworder &#23494;&#30721;&#22120;</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="shell">
       <header>
         <p class="eyebrow">Passworder</p>
-        <h1>离线密码填充</h1>
-        <p id="status" class="status">正在加载...</p>
+        <h1>&#31163;&#32447;&#23494;&#30721;&#22635;&#20805;</h1>
+        <p id="status" class="status">&#27491;&#22312;&#21152;&#36733;...</p>
       </header>
 
       <section id="setup-view" class="panel hidden">
-        <h2>创建本地保险库</h2>
+        <h2>&#21019;&#24314;&#26412;&#22320;&#20445;&#38505;&#24211;</h2>
         <label>
-          基密码：助记词、句子或任意语言文本
-          <textarea id="setup-secret" rows="5" spellcheck="false" placeholder="例如：我在春天的河边记住一把不会联网的钥匙"></textarea>
+          &#22522;&#23494;&#30721;&#65306;&#21161;&#35760;&#35789;&#12289;&#21477;&#23376;&#25110;&#20219;&#24847;&#35821;&#35328;&#25991;&#26412;
+          <textarea
+            id="setup-secret"
+            rows="5"
+            spellcheck="false"
+            placeholder="&#20363;&#22914;&#65306;&#25105;&#22312;&#26149;&#22825;&#30340;&#27827;&#36793;&#35760;&#20303;&#19968;&#25226;&#19981;&#20250;&#32852;&#32593;&#30340;&#38053;&#21273;"
+          ></textarea>
         </label>
-        <p class="hint">你可以使用生成的 24 个英文词，也可以输入中文、英文或任何语言的一句话。请保证它足够长、私密且可记忆。</p>
-        <button id="generate-secret" class="secondary">生成 24 词助记词</button>
+        <p class="hint">
+          &#20320;&#21487;&#20197;&#20351;&#29992;&#29983;&#25104;&#30340; 24
+          &#20010;&#33521;&#25991;&#35789;&#65292;&#20063;&#21487;&#20197;&#36755;&#20837;&#20013;&#25991;&#12289;&#33521;&#25991;&#25110;&#20219;&#20309;&#35821;&#35328;&#30340;&#19968;&#21477;&#35805;&#12290;
+        </p>
+        <button id="generate-secret" class="secondary">&#29983;&#25104; 24 &#35789;&#21161;&#35760;&#35789;</button>
+
+        <fieldset class="pin-field">
+          <legend>&#35774;&#32622; 6 &#20301;&#25968;&#23383; PIN</legend>
+          <div class="pin-row" data-pin="setup"></div>
+        </fieldset>
+        <fieldset class="pin-field">
+          <legend>&#20877;&#36755;&#20837;&#19968;&#27425; PIN</legend>
+          <div class="pin-row" data-pin="setup-confirm"></div>
+        </fieldset>
+
         <label>
-          解锁密码 / PIN
-          <input id="setup-password" type="password" autocomplete="new-password" />
-        </label>
-        <label>
-          解锁有效期
+          &#35299;&#38145;&#26377;&#25928;&#26399;
           <select id="setup-timeout">
-            <option value="15">15 分钟</option>
-            <option value="5">5 分钟</option>
-            <option value="30">30 分钟</option>
-            <option value="60">60 分钟</option>
+            <option value="15">15 &#20998;&#38047;</option>
+            <option value="5">5 &#20998;&#38047;</option>
+            <option value="30">30 &#20998;&#38047;</option>
+            <option value="60">60 &#20998;&#38047;</option>
           </select>
         </label>
-        <button id="setup-submit">加密保存并解锁</button>
+        <button id="setup-submit">&#21152;&#23494;&#20445;&#23384;&#24182;&#35299;&#38145;</button>
       </section>
 
       <section id="unlock-view" class="panel hidden">
-        <h2>解锁保险库</h2>
+        <h2>&#35299;&#38145;&#20445;&#38505;&#24211;</h2>
+        <fieldset class="pin-field">
+          <legend>&#36755;&#20837; 6 &#20301; PIN</legend>
+          <div class="pin-row" data-pin="unlock"></div>
+        </fieldset>
         <label>
-          解锁密码 / PIN
-          <input id="unlock-password" type="password" autocomplete="current-password" />
-        </label>
-        <label>
-          解锁有效期
+          &#35299;&#38145;&#26377;&#25928;&#26399;
           <select id="unlock-timeout">
-            <option value="15">15 分钟</option>
-            <option value="5">5 分钟</option>
-            <option value="30">30 分钟</option>
-            <option value="60">60 分钟</option>
+            <option value="15">15 &#20998;&#38047;</option>
+            <option value="5">5 &#20998;&#38047;</option>
+            <option value="30">30 &#20998;&#38047;</option>
+            <option value="60">60 &#20998;&#38047;</option>
           </select>
         </label>
-        <button id="unlock-submit">解锁</button>
+        <button id="unlock-submit">&#35299;&#38145;</button>
       </section>
 
       <section id="fill-view" class="panel hidden">
-        <h2>填充当前网站</h2>
+        <h2>&#22635;&#20805;&#24403;&#21069;&#32593;&#31449;</h2>
         <div class="site-card">
-          <span>识别到的网站</span>
-          <strong id="site-identity">未知</strong>
+          <span>&#35782;&#21035;&#21040;&#30340;&#32593;&#31449;</span>
+          <strong id="site-identity">&#26410;&#30693;</strong>
           <small id="site-hostname"></small>
         </div>
         <label>
-          账号标识
-          <input id="account" type="text" placeholder="可选：邮箱、用户名或备注" />
+          &#36134;&#21495;&#26631;&#35782;
+          <input id="account" type="text" placeholder="&#21487;&#36873;&#65306;&#37038;&#31665;&#12289;&#29992;&#25143;&#21517;&#25110;&#22791;&#27880;" />
         </label>
         <div class="policy-grid">
           <label>
-            密码长度
+            &#23494;&#30721;&#38271;&#24230;
             <input id="policy-length" type="number" min="8" max="64" step="1" />
           </label>
-          <label class="check"><input id="policy-lowercase" type="checkbox" /> 小写字母</label>
-          <label class="check"><input id="policy-uppercase" type="checkbox" /> 大写字母</label>
-          <label class="check"><input id="policy-digits" type="checkbox" /> 数字</label>
-          <label class="check"><input id="policy-symbols" type="checkbox" /> 符号</label>
+          <label class="check"><input id="policy-lowercase" type="checkbox" /> &#23567;&#20889;&#23383;&#27597;</label>
+          <label class="check"><input id="policy-uppercase" type="checkbox" /> &#22823;&#20889;&#23383;&#27597;</label>
+          <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
+          <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
         </div>
-        <button id="fill-submit">生成并填充</button>
-        <button id="lock-submit" class="secondary">立即锁定</button>
+        <button id="fill-submit">&#29983;&#25104;&#24182;&#22635;&#20805;</button>
+        <button id="lock-submit" class="secondary">&#31435;&#21363;&#38145;&#23450;</button>
       </section>
 
       <p id="message" class="message" role="status"></p>

@@ -59,6 +59,33 @@ small {
   margin: -4px 0 0;
 }
 
+.pin-field {
+  border: 0;
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+}
+
+.pin-field legend {
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.pin-row {
+  display: flex;
+  gap: 7px;
+}
+
+.pin-box {
+  font-size: 20px;
+  height: 40px;
+  padding: 0;
+  text-align: center;
+  width: 39px;
+}
+
 .panel {
   display: grid;
   gap: 11px;

@@ -14,6 +14,8 @@
 - 每站点账号标识和密码策略保存。
 - Rust/WASM 密码派生。
 - content script 自动填充密码框。
+- 密码框聚焦时显示页面内填充建议。
+- 未解锁时在页面内显示 6 位 PIN 输入框，输满自动解锁并填充。
 
 ## 使用体验
 
@@ -97,10 +99,19 @@ Chrome/Edge Manifest V3 插件
 
 - 默认解锁 15 分钟。
 - 可选 5、15、30、60 分钟。
+- 解锁凭据为插件内 6 位数字 PIN。
 - 支持手动“立即锁定”。
 - 浏览器重启、插件重载、service worker 被回收后视为锁定。
 - 明文基密码只保存在 background 内存。
 - content script 永远不接收基密码。
+
+## 系统 PIN / 系统密码边界
+
+普通 Chrome/Edge 插件没有直接调用 Windows PIN、Windows Hello、macOS Touch ID
+或 Linux 桌面密码的权限。当前版本实现的是插件内 6 位数字 PIN。
+
+如果后续要使用系统认证，需要新增 Native Messaging 本机助手，或改用
+WebAuthn/Passkey 做密钥封装。该能力不能只靠 Manifest V3 前端脚本完成。
 
 ## 网站身份
 

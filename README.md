@@ -107,7 +107,7 @@ Edge/Chrome 加载方式：
 1. 打开 `edge://extensions` 或 `chrome://extensions`。
 2. 开启“开发人员模式”。
 3. 点击“加载解压缩”。
-4. 选择 `releases/passworder-chrome-edge-v0.2.0`。
+4. 选择 `releases/passworder-chrome-edge-v0.3.0`。
 
 注意：浏览器不能直接通过“加载解压缩”选择 `.zip`，需要选择解压后的目录。
 

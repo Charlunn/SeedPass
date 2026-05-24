@@ -25,8 +25,8 @@ async function ensureCore() {
   return coreReady;
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  handleMessage(message)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender)
     .then((response) => sendResponse({ ok: true, ...response }))
     .catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
@@ -42,11 +42,11 @@ chrome.commands.onCommand.addListener(async (command) => {
     const settings = await getSiteSettings(site.identity);
     await fillCurrentTab(site, settings.account ?? "", settings.policy ?? DEFAULT_POLICY);
   } catch {
-    // 快捷键失败时不弹出敏感信息或噪声错误。
+    // Shortcut failures should not expose secrets or noisy errors.
   }
 });
 
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   switch (message?.type) {
     case "get-state":
       return getState();
@@ -78,8 +78,18 @@ async function handleMessage(message) {
       await fillCurrentTab(site, message.account ?? "", policy);
       return {};
     }
+    case "inline-state":
+      return getInlineState(sender);
+    case "inline-fill":
+      return deriveForSender(sender);
+    case "inline-unlock-and-fill":
+      await unlockVault({
+        unlockPassword: message.pin,
+        timeoutMinutes: message.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES
+      });
+      return deriveForSender(sender);
     default:
-      throw new Error("未知的插件请求。");
+      throw new Error("\u672a\u77e5\u7684\u63d2\u4ef6\u8bf7\u6c42\u3002");
   }
 }
 
@@ -93,9 +103,16 @@ async function getState() {
   };
 }
 
+async function getInlineState(sender) {
+  const site = getSiteFromSender(sender);
+  const settings = await getSiteSettings(site.identity);
+  const state = await getState();
+  return { site, settings, ...state };
+}
+
 async function setupVault(message) {
-  const baseSecret = requireNonEmpty(message.baseSecret, "基密码");
-  const unlockPassword = requireNonEmpty(message.unlockPassword, "解锁密码");
+  const baseSecret = requireNonEmpty(message.baseSecret, "\u57fa\u5bc6\u7801");
+  const unlockPassword = requirePin(message.unlockPassword);
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
   const vault = await encryptVault(baseSecret, unlockPassword);
   await storageSet(VAULT_KEY, vault);
@@ -104,33 +121,31 @@ async function setupVault(message) {
 }
 
 async function unlockVault(message) {
-  const unlockPassword = requireNonEmpty(message.unlockPassword, "解锁密码");
+  const unlockPassword = requirePin(message.unlockPassword);
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
   const vault = await storageGet(VAULT_KEY);
   if (!vault) {
-    throw new Error("尚未创建保险库。");
+    throw new Error("\u5c1a\u672a\u521b\u5efa\u4fdd\u9669\u5e93\u3002");
   }
   const baseSecret = await decryptVault(vault, unlockPassword);
   unlockFor(baseSecret, timeoutMinutes);
   return getState();
 }
 
-async function fillCurrentTab(site, account, policy) {
+async function deriveForSender(sender) {
   assertUnlocked();
-  await ensureCore();
-
-  const password = derivePassword(
-    unlockedSecret,
+  const site = getSiteFromSender(sender);
+  const settings = await getSiteSettings(site.identity);
+  const password = await derivePasswordForSite(
     site.identity,
-    account || undefined,
-    undefined,
-    210000,
-    policy.length,
-    policy.lowercase,
-    policy.uppercase,
-    policy.digits,
-    policy.symbols
+    settings.account ?? "",
+    settings.policy ?? DEFAULT_POLICY
   );
+  return { password, site, settings };
+}
+
+async function fillCurrentTab(site, account, policy) {
+  const password = await derivePasswordForSite(site.identity, account, policy);
 
   await chrome.scripting.executeScript({
     target: { tabId: site.tabId },
@@ -141,8 +156,27 @@ async function fillCurrentTab(site, account, policy) {
     password
   });
   if (!response?.filled) {
-    throw new Error("没有找到可见的密码输入框。");
+    throw new Error("\u6ca1\u6709\u627e\u5230\u53ef\u89c1\u7684\u5bc6\u7801\u8f93\u5165\u6846\u3002");
   }
+}
+
+async function derivePasswordForSite(siteIdentityValue, account, policy) {
+  assertUnlocked();
+  await ensureCore();
+  const normalizedPolicy = normalizePolicy(policy);
+
+  return derivePassword(
+    unlockedSecret,
+    siteIdentityValue,
+    account || undefined,
+    undefined,
+    210000,
+    normalizedPolicy.length,
+    normalizedPolicy.lowercase,
+    normalizedPolicy.uppercase,
+    normalizedPolicy.digits,
+    normalizedPolicy.symbols
+  );
 }
 
 function unlockFor(baseSecret, timeoutMinutes) {
@@ -173,7 +207,7 @@ function isUnlocked() {
 
 function assertUnlocked() {
   if (!isUnlocked()) {
-    throw new Error("保险库已锁定。");
+    throw new Error("\u4fdd\u9669\u5e93\u5df2\u9501\u5b9a\u3002");
   }
 }
 
@@ -188,7 +222,8 @@ async function encryptVault(baseSecret, password) {
   );
 
   return {
-    version: 1,
+    version: 2,
+    unlock: "six-digit-pin",
     kdf: "PBKDF2-HMAC-SHA256",
     iterations: 600000,
     salt: toBase64(salt),
@@ -199,8 +234,8 @@ async function encryptVault(baseSecret, password) {
 }
 
 async function decryptVault(vault, password) {
-  if (vault.version !== 1 || vault.cipher !== "AES-256-GCM") {
-    throw new Error("不支持的保险库格式。");
+  if (![1, 2].includes(vault.version) || vault.cipher !== "AES-256-GCM") {
+    throw new Error("\u4e0d\u652f\u6301\u7684\u4fdd\u9669\u5e93\u683c\u5f0f\u3002");
   }
 
   const salt = fromBase64(vault.salt);
@@ -216,7 +251,7 @@ async function decryptVault(vault, password) {
     );
     return decode(new Uint8Array(plaintext));
   } catch {
-    throw new Error("解锁失败。");
+    throw new Error("\u89e3\u9501\u5931\u8d25\u3002");
   }
 }
 
@@ -235,13 +270,21 @@ async function deriveVaultKey(password, salt, iterations = 600000) {
 
 async function getCurrentSite() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return getSiteFromTab(tab);
+}
+
+function getSiteFromSender(sender) {
+  return getSiteFromTab(sender?.tab);
+}
+
+function getSiteFromTab(tab) {
   if (!tab?.id || !tab.url) {
-    throw new Error("没有活动标签页。");
+    throw new Error("\u6ca1\u6709\u6d3b\u52a8\u6807\u7b7e\u9875\u3002");
   }
 
   const url = new URL(tab.url);
   if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("当前页面不是普通网站。");
+    throw new Error("\u5f53\u524d\u9875\u9762\u4e0d\u662f\u666e\u901a\u7f51\u7ad9\u3002");
   }
 
   return {
@@ -292,7 +335,7 @@ function normalizePolicy(policy = {}) {
   };
 
   if (!Number.isInteger(normalized.length) || normalized.length < 8 || normalized.length > 64) {
-    throw new Error("密码长度必须是 8 到 64 之间的整数。");
+    throw new Error("\u5bc6\u7801\u957f\u5ea6\u5fc5\u987b\u662f 8 \u5230 64 \u4e4b\u95f4\u7684\u6574\u6570\u3002");
   }
   if (
     !normalized.lowercase &&
@@ -300,7 +343,7 @@ function normalizePolicy(policy = {}) {
     !normalized.digits &&
     !normalized.symbols
   ) {
-    throw new Error("至少需要启用一种字符类型。");
+    throw new Error("\u81f3\u5c11\u9700\u8981\u542f\u7528\u4e00\u79cd\u5b57\u7b26\u7c7b\u578b\u3002");
   }
   return normalized;
 }
@@ -313,9 +356,17 @@ function normalizeTimeout(value) {
 function requireNonEmpty(value, label) {
   const normalized = String(value ?? "").trim();
   if (!normalized) {
-    throw new Error(`${label}不能为空。`);
+    throw new Error(`${label}\u4e0d\u80fd\u4e3a\u7a7a\u3002`);
   }
   return normalized;
+}
+
+function requirePin(value) {
+  const pin = requireNonEmpty(value, "PIN");
+  if (!/^\d{6}$/.test(pin)) {
+    throw new Error("PIN \u5fc5\u987b\u662f 6 \u4f4d\u6570\u5b57\u3002");
+  }
+  return pin;
 }
 
 function storageGet(key) {

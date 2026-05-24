@@ -1,5 +1,20 @@
 # 发布说明
 
+## chrome-edge-v0.3.0
+
+插件交互升级。
+
+包含：
+
+- 当焦点进入网页密码输入框时，页面内显示 Passworder 填充建议。
+- 已解锁时，点击建议即可直接生成并填充当前网站密码。
+- 未解锁时，建议浮层显示 6 位 PIN 输入框；输满后自动尝试解锁，成功后立即填充。
+- popup 的创建和解锁流程改为 6 位数字 PIN 盒输入。
+- 新保险库标记为 `version: 2` 和 `unlock: six-digit-pin`。
+- 文档明确系统 PIN/系统密码不能由普通浏览器插件直接调用；后续若要接入
+  Windows Hello、macOS Touch ID 或 Linux 桌面认证，需要 Native Messaging
+  本机助手或 WebAuthn/Passkey 方案。
+
 ## v0.2.0
 
 中文原生插件与基密码语义更新。

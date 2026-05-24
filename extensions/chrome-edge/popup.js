@@ -80,9 +80,7 @@ const elements = {
   unlockView: document.querySelector("#unlock-view"),
   fillView: document.querySelector("#fill-view"),
   setupSecret: document.querySelector("#setup-secret"),
-  setupPassword: document.querySelector("#setup-password"),
   setupTimeout: document.querySelector("#setup-timeout"),
-  unlockPassword: document.querySelector("#unlock-password"),
   unlockTimeout: document.querySelector("#unlock-timeout"),
   siteIdentity: document.querySelector("#site-identity"),
   siteHostname: document.querySelector("#site-hostname"),
@@ -94,6 +92,12 @@ const elements = {
   policySymbols: document.querySelector("#policy-symbols")
 };
 
+const pinGroups = {
+  setup: createPinBoxes("setup"),
+  setupConfirm: createPinBoxes("setup-confirm"),
+  unlock: createPinBoxes("unlock")
+};
+
 let currentSite = null;
 
 document.querySelector("#generate-secret").addEventListener("click", () => {
@@ -102,30 +106,31 @@ document.querySelector("#generate-secret").addEventListener("click", () => {
 
 document.querySelector("#setup-submit").addEventListener("click", async () => {
   await runAction(async () => {
+    const pin = readPin("setup");
+    const confirm = readPin("setupConfirm");
+    if (pin !== confirm) {
+      throw new Error("两次输入的 PIN 不一致。");
+    }
     await sendMessage({
       type: "setup-vault",
       baseSecret: elements.setupSecret.value,
-      unlockPassword: elements.setupPassword.value,
+      unlockPassword: pin,
       timeoutMinutes: Number(elements.setupTimeout.value)
     });
-    elements.setupPassword.value = "";
+    clearPin("setup");
+    clearPin("setupConfirm");
     await refresh();
     showMessage("保险库已加密保存并解锁。");
   });
 });
 
 document.querySelector("#unlock-submit").addEventListener("click", async () => {
-  await runAction(async () => {
-    await sendMessage({
-      type: "unlock",
-      unlockPassword: elements.unlockPassword.value,
-      timeoutMinutes: Number(elements.unlockTimeout.value)
-    });
-    elements.unlockPassword.value = "";
-    await refresh();
-    showMessage("已解锁。");
-  });
+  await unlockFromPopup();
 });
+
+for (const box of pinGroups.unlock) {
+  box.addEventListener("passworder-pin-complete", unlockFromPopup);
+}
 
 document.querySelector("#fill-submit").addEventListener("click", async () => {
   await runAction(async () => {
@@ -160,6 +165,19 @@ for (const input of [
 
 await refresh();
 
+async function unlockFromPopup() {
+  await runAction(async () => {
+    await sendMessage({
+      type: "unlock",
+      unlockPassword: readPin("unlock"),
+      timeoutMinutes: Number(elements.unlockTimeout.value)
+    });
+    clearPin("unlock");
+    await refresh();
+    showMessage("已解锁。");
+  });
+}
+
 async function refresh() {
   const state = await sendMessage({ type: "get-state" });
   hideAll();
@@ -167,12 +185,14 @@ async function refresh() {
   if (!state.hasVault) {
     elements.status.textContent = "还没有本地保险库，请先创建。";
     elements.setupView.classList.remove("hidden");
+    focusPin("setup");
     return;
   }
 
   if (!state.unlocked) {
     elements.status.textContent = "保险库已锁定。";
     elements.unlockView.classList.remove("hidden");
+    focusPin("unlock");
     return;
   }
 
@@ -227,6 +247,72 @@ function writePolicy(policy) {
   elements.policyUppercase.checked = policy.uppercase ?? DEFAULT_POLICY.uppercase;
   elements.policyDigits.checked = policy.digits ?? DEFAULT_POLICY.digits;
   elements.policySymbols.checked = policy.symbols ?? DEFAULT_POLICY.symbols;
+}
+
+function createPinBoxes(name) {
+  const row = document.querySelector(`[data-pin="${name}"]`);
+  const boxes = Array.from({ length: 6 }, (_, index) => {
+    const input = document.createElement("input");
+    input.type = "password";
+    input.inputMode = "numeric";
+    input.maxLength = 1;
+    input.autocomplete = "off";
+    input.className = "pin-box";
+    input.ariaLabel = `PIN 第 ${index + 1} 位`;
+    row.append(input);
+    return input;
+  });
+
+  boxes.forEach((box, index) => {
+    box.addEventListener("input", () => {
+      box.value = box.value.replace(/\D/g, "").slice(0, 1);
+      if (box.value && index < boxes.length - 1) {
+        boxes[index + 1].focus();
+      }
+      if (/^\d{6}$/.test(readPinByBoxes(boxes))) {
+        box.dispatchEvent(new Event("passworder-pin-complete"));
+      }
+    });
+    box.addEventListener("keydown", (event) => {
+      if (event.key === "Backspace" && !box.value && index > 0) {
+        boxes[index - 1].focus();
+      }
+    });
+    box.addEventListener("paste", (event) => {
+      event.preventDefault();
+      const text = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+      for (let i = 0; i < boxes.length; i += 1) {
+        boxes[i].value = text[i] ?? "";
+      }
+      if (/^\d{6}$/.test(readPinByBoxes(boxes))) {
+        boxes.at(-1).dispatchEvent(new Event("passworder-pin-complete"));
+      }
+    });
+  });
+
+  return boxes;
+}
+
+function readPin(name) {
+  const pin = readPinByBoxes(pinGroups[name]);
+  if (!/^\d{6}$/.test(pin)) {
+    throw new Error("请输入 6 位数字 PIN。");
+  }
+  return pin;
+}
+
+function readPinByBoxes(boxes) {
+  return boxes.map((box) => box.value).join("");
+}
+
+function clearPin(name) {
+  for (const box of pinGroups[name]) {
+    box.value = "";
+  }
+}
+
+function focusPin(name) {
+  setTimeout(() => pinGroups[name][0]?.focus(), 0);
 }
 
 async function runAction(action) {

@@ -1,143 +1,101 @@
 <!doctype html>
-<html lang="auto">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SeedPass</title>
+    <title>Passworder &#23494;&#30721;&#22120;</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="shell">
       <header>
-        <div>
-          <p class="eyebrow">SeedPass</p>
-          <h1 data-i18n="title">SeedPass</h1>
-          <p id="status" class="status">...</p>
-        </div>
-        <select id="language" class="language">
-          <option value="auto">Auto / 自动</option>
-          <option value="zh">中文</option>
-          <option value="en">English</option>
-        </select>
+        <p class="eyebrow">Passworder</p>
+        <h1>&#31163;&#32447;&#23494;&#30721;&#22635;&#20805;</h1>
+        <p id="status" class="status">&#27491;&#22312;&#21152;&#36733;...</p>
       </header>
 
-      <nav class="tabs">
-        <button data-tab="site" class="tab active" data-i18n="tabSite">Current site / 当前网站</button>
-        <button data-tab="records" class="tab" data-i18n="tabRecords">Records / 密码列表</button>
-      </nav>
-
       <section id="setup-view" class="panel hidden">
-        <h2 data-i18n="setupTitle">Create local vault / 创建本地保险库</h2>
+        <h2>&#21019;&#24314;&#26412;&#22320;&#20445;&#38505;&#24211;</h2>
         <label>
-          <span data-i18n="seedLabel">Seed phrase or sentence / 基密码</span>
-          <textarea id="setup-secret" rows="5" spellcheck="false"></textarea>
+          &#22522;&#23494;&#30721;&#65306;&#21161;&#35760;&#35789;&#12289;&#21477;&#23376;&#25110;&#20219;&#24847;&#35821;&#35328;&#25991;&#26412;
+          <textarea
+            id="setup-secret"
+            rows="5"
+            spellcheck="false"
+            placeholder="&#20363;&#22914;&#65306;&#25105;&#22312;&#26149;&#22825;&#30340;&#27827;&#36793;&#35760;&#20303;&#19968;&#25226;&#19981;&#20250;&#32852;&#32593;&#30340;&#38053;&#21273;"
+          ></textarea>
         </label>
-        <p class="hint" data-i18n="seedHint"></p>
-        <button id="generate-secret" class="secondary" data-i18n="generateSeed">Generate seed phrase / 生成助记词</button>
+        <p class="hint">
+          &#20320;&#21487;&#20197;&#20351;&#29992;&#29983;&#25104;&#30340; 24
+          &#20010;&#33521;&#25991;&#35789;&#65292;&#20063;&#21487;&#20197;&#36755;&#20837;&#20013;&#25991;&#12289;&#33521;&#25991;&#25110;&#20219;&#20309;&#35821;&#35328;&#30340;&#19968;&#21477;&#35805;&#12290;
+        </p>
+        <button id="generate-secret" class="secondary">&#29983;&#25104; 24 &#35789;&#21161;&#35760;&#35789;</button>
+
         <fieldset class="pin-field">
-          <legend data-i18n="setPin">Set 6-digit PIN / 设置 6 位 PIN</legend>
+          <legend>&#35774;&#32622; 6 &#20301;&#25968;&#23383; PIN</legend>
           <div class="pin-row" data-pin="setup"></div>
         </fieldset>
         <fieldset class="pin-field">
-          <legend data-i18n="confirmPin">Confirm PIN / 确认 PIN</legend>
-          <div class="pin-row" data-pin="setupConfirm"></div>
+          <legend>&#20877;&#36755;&#20837;&#19968;&#27425; PIN</legend>
+          <div class="pin-row" data-pin="setup-confirm"></div>
         </fieldset>
+
         <label>
-          <span data-i18n="unlockTimeout">Unlock timeout / 解锁有效期</span>
+          &#35299;&#38145;&#26377;&#25928;&#26399;
           <select id="setup-timeout">
-            <option value="15">15 min / 15 分钟</option>
-            <option value="5">5 min / 5 分钟</option>
-            <option value="30">30 min / 30 分钟</option>
-            <option value="60">60 min / 60 分钟</option>
+            <option value="15">15 &#20998;&#38047;</option>
+            <option value="5">5 &#20998;&#38047;</option>
+            <option value="30">30 &#20998;&#38047;</option>
+            <option value="60">60 &#20998;&#38047;</option>
           </select>
         </label>
-        <button id="setup-submit" data-i18n="saveUnlock">Save and unlock / 保存并解锁</button>
+        <button id="setup-submit">&#21152;&#23494;&#20445;&#23384;&#24182;&#35299;&#38145;</button>
       </section>
 
       <section id="unlock-view" class="panel hidden">
-        <h2 data-i18n="unlockTitle">Unlock vault / 解锁保险库</h2>
+        <h2>&#35299;&#38145;&#20445;&#38505;&#24211;</h2>
         <fieldset class="pin-field">
-          <legend data-i18n="enterPin">Enter 6-digit PIN / 输入 6 位 PIN</legend>
+          <legend>&#36755;&#20837; 6 &#20301; PIN</legend>
           <div class="pin-row" data-pin="unlock"></div>
         </fieldset>
         <label>
-          <span data-i18n="unlockTimeout">Unlock timeout / 解锁有效期</span>
+          &#35299;&#38145;&#26377;&#25928;&#26399;
           <select id="unlock-timeout">
-            <option value="15">15 min / 15 分钟</option>
-            <option value="5">5 min / 5 分钟</option>
-            <option value="30">30 min / 30 分钟</option>
-            <option value="60">60 min / 60 分钟</option>
+            <option value="15">15 &#20998;&#38047;</option>
+            <option value="5">5 &#20998;&#38047;</option>
+            <option value="30">30 &#20998;&#38047;</option>
+            <option value="60">60 &#20998;&#38047;</option>
           </select>
         </label>
-        <button id="unlock-submit" data-i18n="unlock">Unlock / 解锁</button>
+        <button id="unlock-submit">&#35299;&#38145;</button>
       </section>
 
-      <section id="site-view" class="panel">
+      <section id="fill-view" class="panel hidden">
+        <h2>&#22635;&#20805;&#24403;&#21069;&#32593;&#31449;</h2>
         <div class="site-card">
-          <span data-i18n="detectedSite">Detected site / 识别到的网站</span>
-          <strong id="site-identity">-</strong>
-          <small id="site-help"></small>
+          <span>&#35782;&#21035;&#21040;&#30340;&#32593;&#31449;</span>
+          <strong id="site-identity">&#26410;&#30693;</strong>
+          <small id="site-hostname"></small>
         </div>
-        <div class="section-title">
-          <h2 data-i18n="siteRecords">Saved records / 已保存记录</h2>
-          <button id="new-site-record" class="secondary" data-i18n="addRecord">Add / 添加</button>
-        </div>
-        <div id="site-records" class="record-list"></div>
-      </section>
-
-      <section id="records-view" class="panel hidden">
         <label>
-          <span data-i18n="searchRecords">Search records / 搜索记录</span>
-          <input id="record-search" type="search" />
+          &#36134;&#21495;&#26631;&#35782;
+          <input id="account" type="text" placeholder="&#21487;&#36873;&#65306;&#37038;&#31665;&#12289;&#29992;&#25143;&#21517;&#25110;&#22791;&#27880;" />
         </label>
-        <div id="all-records" class="record-list"></div>
-      </section>
-
-      <section id="editor-view" class="panel hidden editor">
-        <h2 id="editor-title"></h2>
-        <input id="record-id" type="hidden" />
-        <input id="record-site" type="hidden" />
-        <label>
-          <span data-i18n="accountLabel">Account label / 账号标识</span>
-          <input id="record-account" type="text" />
-        </label>
-        <label>
-          <span data-i18n="noteLabel">Note / 密码备注</span>
-          <input id="record-note" type="text" />
-        </label>
-        <fieldset class="mode-field">
-          <legend data-i18n="generationMode">Password is generated by / 密码生成方式</legend>
-          <label class="radio">
-            <input type="radio" name="record-mode" value="domain" checked />
-            <span data-i18n="modeDomain">Use website name / 按网站生成</span>
-          </label>
-          <label class="radio">
-            <input type="radio" name="record-mode" value="account" />
-            <span data-i18n="modeAccount">Use account label only / 按账号标识生成</span>
-          </label>
-        </fieldset>
-        <p id="mode-help" class="hint"></p>
         <div class="policy-grid">
           <label>
-            <span data-i18n="length">Length / 密码长度</span>
+            &#23494;&#30721;&#38271;&#24230;
             <input id="policy-length" type="number" min="8" max="64" step="1" />
           </label>
-          <label class="check"><input id="policy-lowercase" type="checkbox" /> <span data-i18n="lowercase">lowercase / 小写</span></label>
-          <label class="check"><input id="policy-uppercase" type="checkbox" /> <span data-i18n="uppercase">uppercase / 大写</span></label>
-          <label class="check"><input id="policy-digits" type="checkbox" /> <span data-i18n="digits">digits / 数字</span></label>
-          <label class="check"><input id="policy-symbols" type="checkbox" /> <span data-i18n="symbols">symbols / 符号</span></label>
+          <label class="check"><input id="policy-lowercase" type="checkbox" /> &#23567;&#20889;&#23383;&#27597;</label>
+          <label class="check"><input id="policy-uppercase" type="checkbox" /> &#22823;&#20889;&#23383;&#27597;</label>
+          <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
+          <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
         </div>
-        <div class="button-row">
-          <button id="save-record" data-i18n="saveRecord">Save / 保存</button>
-          <button id="cancel-edit" class="secondary" data-i18n="cancel">Cancel / 取消</button>
-          <button id="delete-record" class="danger" data-i18n="delete">Delete / 删除</button>
-        </div>
+        <button id="fill-submit">&#29983;&#25104;&#24182;&#22635;&#20805;</button>
+        <button id="lock-submit" class="secondary">&#31435;&#21363;&#38145;&#23450;</button>
       </section>
 
-      <footer>
-        <button id="lock-submit" class="secondary" data-i18n="lockNow">Lock now / 立即锁定</button>
-        <p id="message" class="message" role="status"></p>
-      </footer>
+      <p id="message" class="message" role="status"></p>
     </main>
     <script src="popup.js" type="module"></script>
   </body>

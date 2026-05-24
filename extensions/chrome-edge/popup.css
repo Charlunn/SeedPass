@@ -19,7 +19,7 @@
   --space-3: 10px;
   --space-4: 10px;
   --space-5: 14px;
-  --control-h: 36px;
+  --control-h: 34px;
   color: var(--text);
   background: var(--bg);
   font-family: "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", sans-serif;
@@ -67,13 +67,13 @@ p {
 }
 
 h1 {
-  font-size: 21px;
+  font-size: 20px;
   letter-spacing: -0.04em;
   line-height: 1.1;
 }
 
 h2 {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.2;
 }
 
@@ -133,8 +133,8 @@ small {
   border: 1px solid rgba(74, 51, 24, 0.1);
   border-radius: var(--radius-lg);
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: 8px;
+  padding: 9px;
 }
 
 .hidden {
@@ -166,7 +166,7 @@ textarea {
 
 textarea {
   line-height: 1.45;
-  min-height: 78px;
+  min-height: 68px;
   resize: vertical;
 }
 
@@ -214,7 +214,8 @@ button.secondary {
 
 .pin-field,
 .mode-field,
-.choice-field {
+.choice-field,
+.fold-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   display: grid;
@@ -230,6 +231,21 @@ button.secondary {
   font-size: 12px;
   font-weight: 800;
   padding: 0 4px;
+}
+
+.fold-card summary {
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fold-card summary::marker {
+  color: var(--brand);
+}
+
+.fold-card[open] {
+  gap: 8px;
 }
 
 .choice-card {
@@ -296,7 +312,7 @@ button.secondary {
 }
 
 .pin-box {
-  font-size: 16px;
+  font-size: 15px;
   height: var(--control-h);
   min-height: var(--control-h);
   padding: 0;
@@ -309,19 +325,19 @@ button.secondary {
   border-radius: var(--radius-md);
   display: grid;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 7px 9px;
 }
 
 .site-card span {
   color: var(--muted-2);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .site-card strong {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -336,6 +352,15 @@ button.secondary {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.compact-mode {
+  grid-template-columns: 1fr 1fr;
+}
+
+.compact-mode legend,
+.compact-mode .hint {
+  grid-column: 1 / -1;
+}
+
 .check {
   align-items: center;
   background: rgba(255, 255, 255, 0.38);
@@ -344,8 +369,8 @@ button.secondary {
   display: flex;
   font-weight: 700;
   gap: var(--space-2);
-  min-height: 34px;
-  padding: 7px 9px;
+  min-height: 32px;
+  padding: 6px 8px;
 }
 
 .check input {
@@ -365,7 +390,7 @@ button.secondary {
 .record-list {
   display: grid;
   gap: var(--space-2);
-  max-height: 112px;
+  max-height: 96px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -374,6 +399,11 @@ button.secondary {
   display: grid;
   gap: var(--space-2);
   grid-template-columns: 1.5fr 0.75fr 0.75fr;
+}
+
+.small-action {
+  min-height: 32px;
+  padding: 6px 10px;
 }
 
 .record-item {
@@ -400,7 +430,8 @@ button.secondary {
   .policy-grid,
   .choice-field,
   .pin-stack,
-  .action-grid {
+  .action-grid,
+  .compact-mode {
     grid-template-columns: 1fr;
   }
 }

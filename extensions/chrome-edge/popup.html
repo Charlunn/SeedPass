@@ -115,34 +115,40 @@
           &#23494;&#30721;&#22791;&#27880;
           <input id="note" type="text" placeholder="&#21487;&#36873;&#65306;&#20027;&#21495;&#12289;&#24037;&#20316;&#12289;&#20020;&#26102;&#29992;" />
         </label>
-        <fieldset class="mode-field">
+        <fieldset class="mode-field compact-mode">
           <legend>&#23494;&#30721;&#29983;&#25104;&#26041;&#24335;</legend>
           <label class="check"><input name="mode" value="domain" type="radio" checked /> &#25353;&#32593;&#31449;&#29983;&#25104;&#65288;&#40664;&#35748;&#25512;&#33616;&#65289;</label>
           <label class="check"><input name="mode" value="account" type="radio" /> &#20165;&#25353;&#36134;&#21495;&#26631;&#35782;&#29983;&#25104;</label>
           <p id="mode-help" class="hint"></p>
         </fieldset>
         <input id="record-id" type="hidden" />
-        <div class="policy-grid">
-          <label>
-            &#23494;&#30721;&#38271;&#24230;
-            <input id="policy-length" type="number" min="8" max="64" step="1" />
-          </label>
-          <label class="check"><input id="policy-lowercase" type="checkbox" /> &#23567;&#20889;&#23383;&#27597;</label>
-          <label class="check"><input id="policy-uppercase" type="checkbox" /> &#22823;&#20889;&#23383;&#27597;</label>
-          <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
-          <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
-        </div>
         <div class="action-grid">
           <button id="fill-submit">&#20445;&#23384;&#24182;&#22635;&#20805;</button>
           <button id="new-record" class="secondary">&#28155;&#21152;</button>
           <button id="delete-record" class="secondary">&#21024;&#38500;</button>
         </div>
-        <label>
-          &#25628;&#32034;&#24050;&#20445;&#23384;&#35760;&#24405;
-          <input id="record-search" type="search" placeholder="&#36755;&#20837;&#32593;&#31449;&#12289;&#36134;&#21495;&#26631;&#35782;&#25110;&#22791;&#27880;" />
-        </label>
-        <div id="record-list" class="record-list"></div>
-        <button id="lock-submit" class="secondary">&#31435;&#21363;&#38145;&#23450;</button>
+        <details class="fold-card">
+          <summary>&#23494;&#30721;&#35268;&#21017;&#65288;&#39640;&#32423;&#65289;</summary>
+          <div class="policy-grid">
+            <label>
+              &#23494;&#30721;&#38271;&#24230;
+              <input id="policy-length" type="number" min="8" max="64" step="1" />
+            </label>
+            <label class="check"><input id="policy-lowercase" type="checkbox" /> &#23567;&#20889;&#23383;&#27597;</label>
+            <label class="check"><input id="policy-uppercase" type="checkbox" /> &#22823;&#20889;&#23383;&#27597;</label>
+            <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
+            <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
+          </div>
+        </details>
+        <details class="fold-card">
+          <summary>&#24050;&#20445;&#23384;&#35760;&#24405;</summary>
+          <label>
+            &#25628;&#32034;
+            <input id="record-search" type="search" placeholder="&#36755;&#20837;&#36134;&#21495;&#26631;&#35782;&#25110;&#22791;&#27880;" />
+          </label>
+          <div id="record-list" class="record-list"></div>
+        </details>
+        <button id="lock-submit" class="secondary small-action">&#31435;&#21363;&#38145;&#23450;</button>
       </section>
 
       <p id="message" class="message" role="status"></p>

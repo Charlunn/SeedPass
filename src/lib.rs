@@ -5,6 +5,8 @@ use std::format;
 use std::string::{String, ToString};
 use std::vec::Vec;
 use unicode_normalization::UnicodeNormalization;
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
 
 const DOMAIN: &str = "passworder-core";
 const VERSION: &str = "v1";
@@ -213,6 +215,45 @@ pub fn derive_password(
         iterations: options.iterations,
         length: options.policy.length,
     })
+}
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen(js_name = derivePassword)]
+#[allow(clippy::too_many_arguments)]
+pub fn derive_password_wasm(
+    base_secret: &str,
+    service: &str,
+    account: Option<String>,
+    context: Option<String>,
+    iterations: u32,
+    length: usize,
+    lowercase: bool,
+    uppercase: bool,
+    digits: bool,
+    symbols: bool,
+) -> Result<String, JsValue> {
+    let policy = PasswordPolicy {
+        length,
+        lowercase,
+        uppercase,
+        digits,
+        symbols,
+    };
+
+    let mut options = DerivePasswordOptions::new(base_secret, service)
+        .iterations(iterations)
+        .policy(policy);
+
+    if let Some(account) = account.as_deref() {
+        options = options.account(account);
+    }
+    if let Some(context) = context.as_deref() {
+        options = options.context(context);
+    }
+
+    derive_password(&options)
+        .map(|result| result.password)
+        .map_err(|error| JsValue::from_str(&error.to_string()))
 }
 
 fn validate_policy(policy: PasswordPolicy) -> Result<(), PassworderError> {

@@ -6,9 +6,12 @@ service/app name into a deterministic password. No network sync is required:
 the same inputs and versioned algorithm produce the same password on every
 device.
 
-This repository intentionally contains only the core. iPhone apps, Android
-apps, mini programs, browser extensions, CLIs, or desktop frontends can wrap
-the Rust crate through native bindings, FFI, or WebAssembly.
+The Rust crate remains the core implementation. iPhone apps, Android apps,
+mini programs, browser extensions, CLIs, or desktop frontends can wrap the Rust
+crate through native bindings, FFI, or WebAssembly.
+
+An initial Chrome/Edge extension implementation lives in
+`extensions/chrome-edge`. It wraps this Rust core through WebAssembly.
 
 ## Design Goals
 

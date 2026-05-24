@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Passworder</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">Passworder</p>
+        <h1>Offline password fill</h1>
+        <p id="status" class="status">Loading...</p>
+      </header>
+
+      <section id="setup-view" class="panel hidden">
+        <h2>Set up vault</h2>
+        <label>
+          Base mnemonic or text
+          <textarea id="setup-secret" rows="5" spellcheck="false"></textarea>
+        </label>
+        <button id="generate-secret" class="secondary">Generate 24-word mnemonic</button>
+        <label>
+          Unlock password / PIN
+          <input id="setup-password" type="password" autocomplete="new-password" />
+        </label>
+        <label>
+          Unlock timeout
+          <select id="setup-timeout">
+            <option value="15">15 minutes</option>
+            <option value="5">5 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </label>
+        <button id="setup-submit">Encrypt and unlock</button>
+      </section>
+
+      <section id="unlock-view" class="panel hidden">
+        <h2>Unlock vault</h2>
+        <label>
+          Unlock password / PIN
+          <input id="unlock-password" type="password" autocomplete="current-password" />
+        </label>
+        <label>
+          Unlock timeout
+          <select id="unlock-timeout">
+            <option value="15">15 minutes</option>
+            <option value="5">5 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </label>
+        <button id="unlock-submit">Unlock</button>
+      </section>
+
+      <section id="fill-view" class="panel hidden">
+        <h2>Fill current site</h2>
+        <div class="site-card">
+          <span>Detected site</span>
+          <strong id="site-identity">Unknown</strong>
+          <small id="site-hostname"></small>
+        </div>
+        <label>
+          Account label
+          <input id="account" type="text" placeholder="optional email or username" />
+        </label>
+        <div class="policy-grid">
+          <label>
+            Length
+            <input id="policy-length" type="number" min="8" max="64" step="1" />
+          </label>
+          <label class="check"><input id="policy-lowercase" type="checkbox" /> lowercase</label>
+          <label class="check"><input id="policy-uppercase" type="checkbox" /> uppercase</label>
+          <label class="check"><input id="policy-digits" type="checkbox" /> digits</label>
+          <label class="check"><input id="policy-symbols" type="checkbox" /> symbols</label>
+        </div>
+        <button id="fill-submit">Generate and fill</button>
+        <button id="lock-submit" class="secondary">Lock now</button>
+      </section>
+
+      <p id="message" class="message" role="status"></p>
+    </main>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

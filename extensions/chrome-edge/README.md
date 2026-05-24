@@ -1,8 +1,20 @@
-# Chrome/Edge Extension Version
+# Chrome/Edge Extension
 
-This folder documents the planned browser-extension frontend for Passworder
-Core. The extension is not the core implementation; it is a wrapper around the
-Rust core compiled to WebAssembly or exposed through another binding layer.
+This folder contains the Chrome/Edge Manifest V3 frontend for Passworder Core.
+The extension is not a second password algorithm; it wraps the Rust core
+compiled to WebAssembly.
+
+Implemented in this folder:
+
+- Manifest V3 extension scaffold.
+- Popup setup/unlock/fill UI.
+- AES-GCM encrypted mnemonic vault in `chrome.storage.local`.
+- PBKDF2-HMAC-SHA256 unlock-key derivation.
+- Background-only decrypted mnemonic cache with timeout.
+- Current-tab site identity detection.
+- Per-site account and password policy storage.
+- Rust/WASM password derivation.
+- Content script password field filling.
 
 ## Target UX
 

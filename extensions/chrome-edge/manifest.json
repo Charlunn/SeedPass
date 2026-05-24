@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Passworder",
+  "version": "0.1.0",
+  "description": "Offline deterministic password generator powered by Passworder Core.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Passworder"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "commands": {
+    "fill-password": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "Fill password for current site"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

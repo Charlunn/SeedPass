@@ -1,18 +1,25 @@
 # 构建与加载
 
+中文 | [English](BUILD.en.md)
+
 ## 构建 Rust WASM
 
 在仓库根目录执行：
 
 ```sh
-rustup target add wasm32-unknown-unknown --toolchain stable-x86_64-pc-windows-gnu
 cargo install wasm-bindgen-cli --version 0.2.105
-cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-unknown-unknown --no-default-features --features wasm
+rustup target add wasm32-unknown-unknown
+cargo build --release --target wasm32-unknown-unknown --no-default-features --features wasm
 wasm-bindgen target/wasm32-unknown-unknown/release/passworder_core.wasm --target web --out-dir extensions/chrome-edge/pkg --out-name passworder_core
 ```
 
-如果不是 Windows，且默认 Rust 工具链可用，可以省略显式的
-`+stable-x86_64-pc-windows-gnu`。
+如果你在 Windows 上使用 MSVC 工具链或遇到目标/链接器问题，可以尝试改用 GNU 工具链：
+
+```sh
+rustup toolchain install stable-x86_64-pc-windows-gnu
+rustup target add wasm32-unknown-unknown --toolchain stable-x86_64-pc-windows-gnu
+cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-unknown-unknown --no-default-features --features wasm
+```
 
 ## 在 Edge 或 Chrome 中加载
 

@@ -70,8 +70,8 @@ let result = derive_password(
 
 ## 文档
 
-- 规范（算法版本、规范化、salt 编码、测试向量）：`SPEC.md`（[English](SPEC.en.md)）
-- 发布说明（主要为插件版本变更）：`RELEASE.md`（[English](RELEASE.en.md)）
+- 规范（算法版本、规范化、salt 编码、测试向量）：[SPEC.md](SPEC.md)（[English](SPEC.en.md)）
+- 发布说明（主要为插件版本变更）：[RELEASE.md](RELEASE.md)（[English](RELEASE.en.md)）
 
 ## 基密码建议
 

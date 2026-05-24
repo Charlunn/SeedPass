@@ -69,8 +69,8 @@ let result = derive_password(
 
 ## Docs
 
-- Spec (algorithm version, normalization, salt encoding, test vectors): `SPEC.en.md` (Chinese: `SPEC.md`)
-- Release notes (primarily extension versions): `RELEASE.en.md` (Chinese: `RELEASE.md`)
+- Spec (algorithm version, normalization, salt encoding, test vectors): [SPEC.en.md](SPEC.en.md) (Chinese: [SPEC.md](SPEC.md))
+- Release notes (primarily extension versions): [RELEASE.en.md](RELEASE.en.md) (Chinese: [RELEASE.md](RELEASE.md))
 
 ## Base Secret Guidance
 

@@ -1,44 +1,30 @@
 # SeedPass Chrome/Edge 插件
 
-SeedPass is an offline deterministic password extension. One strong seed phrase
-can reproduce passwords for websites without cloud sync.
+中文 | [English](README.en.md)
 
-SeedPass 是一个离线确定性密码插件。一个足够强的基密码可以在不依赖云同步的
-情况下复现各网站密码。
+SeedPass 是一个离线确定性密码插件：一条足够强的“基密码”即可在不依赖云同步的情况下复现各网站密码。
 
-这个目录是 Passworder Core 的 Chrome/Edge Manifest V3 前端。插件不实现第二套
-密码算法，而是调用 Rust 核心编译出的 WebAssembly。
+本目录是 Passworder Core 的 Chrome/Edge Manifest V3 前端。插件不实现第二套密码算法，而是调用 Rust 核心编译出的 WebAssembly。
 
-已实现：
+相关文档：
 
-- Manifest V3 插件结构。
+- 构建与加载：[BUILD.md](BUILD.md)（[English](BUILD.en.md)）
+- 核心算法规范：[SPEC.md](../../SPEC.md)（[English](../../SPEC.en.md)）
+
+## 功能概览
+
+- Manifest V3 插件结构（Edge/Chrome）。
 - 中文原生 popup：创建保险库、解锁、填充、策略调整。
-- `chrome.storage.local` 中的 AES-GCM 加密基密码保险库。
-- PBKDF2-HMAC-SHA256 解锁密钥派生。
-- background 内存中的短期解锁缓存。
+- `chrome.storage.local` 中的 AES‑GCM 加密基密码保险库。
+- PBKDF2‑HMAC‑SHA256 解锁密钥派生。
+- background service worker 内存中的短期解锁缓存与超时锁定。
 - 当前标签页网站身份识别。
-- 每站点账号标识和密码策略保存。
+- 每站点账号标识与密码策略保存。
 - Rust/WASM 密码派生。
 - content script 自动填充密码框。
-- 密码框聚焦时显示页面内填充建议。
-- 未解锁时在页面内显示 6 位 PIN 输入框，输满自动解锁并填充。
-- SeedPass 名称和 `0.4.0` manifest。
-- 当前网站多记录保存、搜索和切换。
-- 默认按网站生成；账号标识/备注只用于管理。
-- 可为单条记录切换为“仅按账号标识生成”。
-
-Implemented:
-
-- Manifest V3 extension for Edge and Chrome.
-- Rust/WASM password generation.
-- Encrypted local seed vault in `chrome.storage.local`.
-- Short unlock session in the background service worker.
-- Inline fill suggestion on password field focus.
-- 6-digit PIN quick unlock and fill.
-- SeedPass name and `0.4.0` manifest.
-- Multiple current-site records with search and switching.
-- Default generation by website; account label/note are only for organization.
-- Optional per-record "generate by account label only" mode.
+- 密码框聚焦时显示页面内填充建议；未解锁时显示 6 位 PIN，输满自动解锁并填充。
+- 当前网站多记录保存、搜索与切换。
+- 默认按网站生成；账号标识/备注只用于管理；可为单条记录切换为“仅按账号标识生成”。
 
 ## 使用体验
 
@@ -51,9 +37,7 @@ Implemented:
 7. content script 填充当前页面的密码输入框。
 8. 解锁超时后，内存中的明文基密码自动清除。
 
-If a record is set to "generate by account label only", SeedPass uses the account
-label instead of the website name for that record. The record is still shown under
-the bound website.
+若单条记录切换为“仅按账号标识生成”，SeedPass 会使用该记录的账号标识替代网站身份参与派生；该记录仍绑定在对应网站下展示与管理。
 
 ## 基密码
 

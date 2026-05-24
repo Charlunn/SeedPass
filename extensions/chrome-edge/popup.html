@@ -16,15 +16,15 @@
 
       <section id="setup-view" class="panel hidden">
         <h2>&#21019;&#24314;&#26412;&#22320;&#20445;&#38505;&#24211;</h2>
-        <div class="guide-card">
-          <strong>第一次使用怎么做？</strong>
-          <p>如果你已经有自己的助记词或私密句子，直接粘贴到下面即可，不需要点“生成”。SeedPass 只会把它加密保存在本机。</p>
+        <details class="guide-card">
+          <summary>第一次使用怎么做？</summary>
+          <p>如果你已有助记词或私密句子，直接粘贴到下面即可，不需要点“生成”。SeedPass 只会把它加密保存在本机。</p>
           <ol>
             <li>输入自己的基密码，或选择让 SeedPass 生成一组新的。</li>
             <li>设置 6 位 PIN，用来短时间解锁插件。</li>
             <li>保存后，进入网站密码框即可点击建议填充。</li>
           </ol>
-        </div>
+        </details>
 
         <fieldset class="choice-field">
           <legend>选择基密码来源</legend>
@@ -59,14 +59,16 @@
           <button id="generate-secret" class="secondary" type="button">&#29983;&#25104; 24 &#35789;&#21161;&#35760;&#35789;</button>
         </div>
 
-        <fieldset class="pin-field">
-          <legend>&#35774;&#32622; 6 &#20301;&#25968;&#23383; PIN</legend>
-          <div class="pin-row" data-pin="setup"></div>
-        </fieldset>
-        <fieldset class="pin-field">
-          <legend>&#20877;&#36755;&#20837;&#19968;&#27425; PIN</legend>
-          <div class="pin-row" data-pin="setup-confirm"></div>
-        </fieldset>
+        <div class="pin-stack">
+          <fieldset class="pin-field">
+            <legend>&#35774;&#32622; 6 &#20301;&#25968;&#23383; PIN</legend>
+            <div class="pin-row" data-pin="setup"></div>
+          </fieldset>
+          <fieldset class="pin-field">
+            <legend>&#20877;&#36755;&#20837;&#19968;&#27425; PIN</legend>
+            <div class="pin-row" data-pin="setup-confirm"></div>
+          </fieldset>
+        </div>
 
         <label>
           &#35299;&#38145;&#26377;&#25928;&#26399;
@@ -130,9 +132,11 @@
           <label class="check"><input id="policy-digits" type="checkbox" /> &#25968;&#23383;</label>
           <label class="check"><input id="policy-symbols" type="checkbox" /> &#31526;&#21495;</label>
         </div>
-        <button id="fill-submit">&#20445;&#23384;&#24182;&#22635;&#20805;</button>
-        <button id="new-record" class="secondary">&#28155;&#21152;&#19968;&#26465;&#35760;&#24405;</button>
-        <button id="delete-record" class="secondary">&#21024;&#38500;&#24403;&#21069;&#35760;&#24405;</button>
+        <div class="action-grid">
+          <button id="fill-submit">&#20445;&#23384;&#24182;&#22635;&#20805;</button>
+          <button id="new-record" class="secondary">&#28155;&#21152;</button>
+          <button id="delete-record" class="secondary">&#21024;&#38500;</button>
+        </div>
         <label>
           &#25628;&#32034;&#24050;&#20445;&#23384;&#35760;&#24405;
           <input id="record-search" type="search" placeholder="&#36755;&#20837;&#32593;&#31449;&#12289;&#36134;&#21495;&#26631;&#35782;&#25110;&#22791;&#27880;" />

@@ -1,103 +1,97 @@
-# Passworder Core Specification
+# Passworder Core 规范
 
-## Algorithm Version
+## 算法版本
 
-`passworder-core:v1:PBKDF2-HMAC-SHA256`
+```text
+passworder-core:v1:PBKDF2-HMAC-SHA256
+```
 
-This version string is part of the public contract. Any incompatible change to
-normalization, salt encoding, KDF parameters, or password encoding requires a
-new algorithm version.
+版本字符串是公开兼容性合同。只要规范化方式、盐编码、KDF 参数或密码编码
+发生不兼容变化，就必须升级算法版本。
 
-## Runtime Requirements
+## 运行时要求
 
-Implementations need only these primitives:
+实现同算法只需要这些基础能力：
 
-- UTF-8 text encoding.
-- Unicode `NFKC` string normalization.
-- Secure random bytes for mnemonic generation.
-- PBKDF2-HMAC-SHA-256.
+- UTF-8 文本编码。
+- Unicode `NFKC` 字符串规范化。
+- 生成助记词时需要安全随机数。
+- PBKDF2-HMAC-SHA-256。
 
-No network, storage, account system, or server synchronization is required.
+不需要联网、服务器账号、数据库或云同步。
 
-## Inputs
+## 输入
 
-- `base_secret`: user root secret. May be a generated mnemonic, user-entered
-  mnemonic, or any text.
-- `service`: website/app identifier.
-- `account`: optional account identifier.
-- `context`: optional namespace.
-- `iterations`: PBKDF2 iteration count. Default `210000`, minimum `10000`.
-- `policy`: output length and enabled character classes.
+- `base_secret`: 用户根秘密，也就是基密码。可以是生成的助记词、用户输入的
+  助记词、一句可记忆的话，或任何语言的任意文本。
+- `service`: 网站或应用标识。
+- `account`: 可选账号标识，用于区分同一网站的多个账号。
+- `context`: 可选命名空间，例如 `work` 或 `personal`。
+- `iterations`: PBKDF2 迭代次数。默认 `210000`，最低 `10000`。
+- `policy`: 输出密码长度和字符类型策略。
 
-Generated mnemonic-like base secrets default to 24 words from the built-in
-64-word list.
+生成式助记词默认使用内置 64 词表生成 24 个词。用户也可以不用词表，直接使用
+一句足够长、私密、可记忆的中文、英文或其他语言句子。句子会和其他
+`base_secret` 一样进入同一套规范化和派生流程。
 
-## Normalization
+## 文本规范化
 
-All text inputs are normalized with Unicode `NFKC`, trimmed, and internal
-whitespace is collapsed to one ASCII space. `service` and `account` are then
-lowercased.
+所有文本输入先执行 Unicode `NFKC` 规范化，然后去掉首尾空白，并把内部连续
+空白折叠成一个 ASCII 空格。`service` 和 `account` 在此之后转成小写。
 
-Empty normalized `base_secret` and `service` are invalid.
+规范化后的 `base_secret` 和 `service` 不能为空。
 
-## Salt
+## 盐编码
 
-The PBKDF2 salt is a UTF-8 encoded length-prefixed sequence:
+PBKDF2 salt 是 UTF-8 编码后的长度前缀序列：
 
 ```text
 <len>:passworder-core|<len>:v1|<len>:<service>|<len>:<account>|<len>:<context>
 ```
 
-Lengths count UTF-8 bytes after normalization. Length prefixes avoid collisions
-when service, account, or context contain separator characters.
+`len` 表示规范化后字段的 UTF-8 字节数。长度前缀用于避免字段里包含分隔符时
+产生碰撞。
 
-For the test vector below, normalized salt text is:
+测试向量中的规范化 salt 文本：
 
 ```text
 15:passworder-core|2:v1|11:example.com|5:alice|0:
 ```
 
-## Key Derivation
+## 密钥派生
 
 - KDF: PBKDF2
 - PRF: HMAC-SHA-256
-- Output bytes: 64
+- 派生字节数: 64
 
-## Password Encoding
+## 密码编码
 
-Default output length: `20`.
+默认输出长度：`20`。
 
-The default policy enables lowercase, uppercase, digits, and symbols. The
-encoder guarantees at least one character from every enabled class before
-filling the rest of the password, so the default output satisfies common site
-rules requiring uppercase, lowercase, number, symbol, and minimum length.
+默认策略启用小写字母、大写字母、数字和符号。编码器会先从每个启用字符池中
+选出至少一个字符，再用所有启用字符池填满剩余长度，最后用派生字节做确定性
+洗牌。因此默认输出能满足绝大多数网站的“大写 + 小写 + 数字 + 符号 + 最小
+长度”要求。
 
-Default character pools:
+默认字符池：
 
-- Lowercase: `abcdefghijkmnopqrstuvwxyz`
-- Uppercase: `ABCDEFGHJKLMNPQRSTUVWXYZ`
-- Digits: `23456789`
-- Symbols: `!@#$%^&*_-+=?`
+- 小写: `abcdefghijkmnopqrstuvwxyz`
+- 大写: `ABCDEFGHJKLMNPQRSTUVWXYZ`
+- 数字: `23456789`
+- 符号: `!@#$%^&*_-+=?`
 
-Ambiguous characters such as `0`, `1`, `I`, `l`, and `O` are excluded by
-default.
+默认排除了易混淆字符，例如 `0`、`1`、`I`、`l`、`O`。
 
-The encoder first picks one character from every enabled pool to satisfy the
-policy, then fills the remaining length from the concatenated enabled pools.
-The resulting array is deterministically shuffled using the derived bytes.
+兼容建议：
 
-Compatibility guidance:
+- 大多数网站直接使用默认 20 位策略。
+- 老旧网站拒绝标点时关闭 `symbols`。
+- 只有网站有最大长度限制时才降低 `length`。最低允许长度是 8。
+- 策略变化会改变派生结果，因此前端需要按站点保存策略覆盖。
 
-- Use the default 20-character policy for most sites.
-- Disable `symbols` for legacy sites that reject punctuation.
-- Reduce `length` only when a site has a maximum password length. The minimum
-  accepted length is 8.
-- Changing policy changes the derived password, so frontends should store or
-  let users remember per-site policy overrides if they are needed.
+## 测试向量
 
-## Test Vector
-
-Inputs:
+输入：
 
 ```json
 {
@@ -108,15 +102,24 @@ Inputs:
 }
 ```
 
-Expected password:
+期望密码：
 
 ```text
 &iaQ9PM-+%K9cEu+Tpjf
 ```
 
-## API Surface
+中文句子基密码也必须作为普通 `base_secret` 支持。例如：
 
-The reference Rust crate exports:
+```text
+我在春天的河边记住一把不会联网的钥匙。
+```
+
+同一句话、同一网站、同一账号和同一策略必须稳定生成同一密码；不同句子必须
+生成不同密码。
+
+## Rust API
+
+参考 Rust crate 导出：
 
 - `derive_password(options)`
 - `generate_mnemonic(words)`
@@ -128,6 +131,5 @@ The reference Rust crate exports:
 - `PassworderError`
 - `ALGORITHM`
 
-Frontends should treat the returned password as sensitive and avoid logging,
-analytics, crash reporting, or persistent storage unless explicitly requested
-by the user.
+前端应把生成密码视为敏感数据，除非用户明确要求，否则不要记录日志、上报
+分析、写入崩溃报告或长期存储。

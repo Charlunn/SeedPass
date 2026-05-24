@@ -1,18 +1,32 @@
-# Release Notes
+# 发布说明
+
+## v0.2.0
+
+中文原生插件与基密码语义更新。
+
+包含：
+
+- Chrome/Edge 插件界面改为中文原生文案。
+- 插件 manifest 名称、描述、快捷键说明、状态提示、错误提示和设置引导改为
+  中文。
+- 基密码概念明确支持：生成式多词助记词、用户输入的助记词，或中文、英文及
+  任意语言的一句话/文本。
+- Rust 核心增加中文句子基密码测试，证明句子基密码是核心合同而不是 UI 文案。
+- README、SPEC、插件 README、构建说明改为中文说明。
+- 重建 Chrome/Edge WASM 包和插件 release 产物。
 
 ## v0.1.0
 
-Initial open-source Rust core release under the MIT license.
+初始 MIT 开源 Rust 核心发布。
 
-Included:
+包含：
 
-- Pure Rust deterministic password derivation core.
-- PBKDF2-HMAC-SHA256 algorithm version `passworder-core:v1`.
-- Generated or user-provided mnemonic/text base secret support.
-- Per-service password derivation with optional account and context fields.
-- Default 20-character policy with lowercase, uppercase, digit, and symbol
-  requirements.
-- Configurable password policy for legacy site restrictions.
-- Mnemonic-like base secret generation.
-- Stable specification and test vector.
-- `rlib`, `staticlib`, and `cdylib` crate outputs for downstream bindings.
+- 纯 Rust 确定性密码派生核心。
+- PBKDF2-HMAC-SHA256 算法版本 `passworder-core:v1`。
+- 支持生成式助记词或用户输入文本作为基密码。
+- 支持按网站派生密码，并提供可选账号和上下文字段。
+- 默认 20 位密码策略，包含小写、大写、数字和符号。
+- 支持为老旧网站配置密码策略。
+- 支持生成助记词式基密码。
+- 提供稳定规范和测试向量。
+- 输出 `rlib`、`staticlib` 和 `cdylib`，便于后续绑定。

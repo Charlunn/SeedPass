@@ -1,9 +1,9 @@
 [package]
 name = "passworder-core"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
-description = "Tiny offline deterministic password derivation core."
+description = "轻量离线确定性密码派生核心。"
 readme = "README.md"
 keywords = ["password", "offline", "deterministic", "pbkdf2"]
 categories = ["cryptography"]

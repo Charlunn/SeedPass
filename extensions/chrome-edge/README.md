@@ -1,72 +1,83 @@
-# Chrome/Edge Extension
+# Chrome/Edge 插件
 
-This folder contains the Chrome/Edge Manifest V3 frontend for Passworder Core.
-The extension is not a second password algorithm; it wraps the Rust core
-compiled to WebAssembly.
+这个目录是 Passworder Core 的 Chrome/Edge Manifest V3 前端。插件不实现第二套
+密码算法，而是调用 Rust 核心编译出的 WebAssembly。
 
-Implemented in this folder:
+已实现：
 
-- Manifest V3 extension scaffold.
-- Popup setup/unlock/fill UI.
-- AES-GCM encrypted mnemonic vault in `chrome.storage.local`.
-- PBKDF2-HMAC-SHA256 unlock-key derivation.
-- Background-only decrypted mnemonic cache with timeout.
-- Current-tab site identity detection.
-- Per-site account and password policy storage.
-- Rust/WASM password derivation.
-- Content script password field filling.
+- Manifest V3 插件结构。
+- 中文原生 popup：创建保险库、解锁、填充、策略调整。
+- `chrome.storage.local` 中的 AES-GCM 加密基密码保险库。
+- PBKDF2-HMAC-SHA256 解锁密钥派生。
+- background 内存中的短期解锁缓存。
+- 当前标签页网站身份识别。
+- 每站点账号标识和密码策略保存。
+- Rust/WASM 密码派生。
+- content script 自动填充密码框。
 
-## Target UX
+## 使用体验
 
-1. User opens a login page, for example `https://github.com/login`.
-2. User clicks the extension icon or presses a shortcut.
-3. Extension detects the current site identity, normally `github.com`.
-4. If locked, user enters the local unlock password/PIN.
-5. Extension decrypts the stored base mnemonic into background memory only.
-6. Extension derives the site password from `base_secret + site + account`.
-7. Content script fills the password input on the current page.
-8. After the unlock timeout, the in-memory mnemonic is cleared.
+1. 用户打开登录页，例如 `https://github.com/login`。
+2. 用户点击插件图标或快捷键。
+3. 插件识别当前网站身份，通常是 `github.com`。
+4. 如果保险库已锁定，用户输入本地解锁密码 / PIN。
+5. 插件把加密保存的基密码解密到 background 内存中。
+6. 插件使用 `基密码 + 网站身份 + 账号标识` 派生站点密码。
+7. content script 填充当前页面的密码输入框。
+8. 解锁超时后，内存中的明文基密码自动清除。
 
-## Architecture
+## 基密码
+
+基密码可以是：
+
+- 插件生成的 24 个英文词助记词。
+- 用户自己输入的传统助记词。
+- 一句足够长、私密、可记忆的话。
+- 中文、英文或任何语言文本。
+
+核心会对基密码做 Unicode `NFKC` 规范化、去除首尾空白并折叠内部空白。用户
+必须保持输入完全一致，才能在不同设备上得到同一个站点密码。
+
+## 架构
 
 ```text
-Chrome/Edge Manifest V3 extension
+Chrome/Edge Manifest V3 插件
 ├─ popup UI
-│  ├─ setup mnemonic
-│  ├─ unlock vault
-│  ├─ choose account/policy
-│  └─ trigger fill
+│  ├─ 创建保险库
+│  ├─ 解锁保险库
+│  ├─ 选择账号/策略
+│  └─ 触发填充
 ├─ background service worker
-│  ├─ owns decrypted mnemonic while unlocked
-│  ├─ enforces unlock timeout
-│  ├─ calls Rust/WASM password core
-│  └─ sends generated password to active tab on user action
+│  ├─ 解锁期间持有明文基密码
+│  ├─ 执行超时锁定
+│  ├─ 调用 Rust/WASM 核心
+│  └─ 仅在用户动作后把生成密码发送到当前标签页
 ├─ content script
-│  ├─ finds password inputs
-│  └─ fills password field
+│  ├─ 查找密码输入框
+│  └─ 填充密码
 ├─ storage.local
-│  ├─ encrypted mnemonic vault
-│  ├─ KDF parameters
-│  ├─ per-site account labels
-│  └─ per-site password policy overrides
-└─ wasm package
-   └─ compiled Passworder Core
+│  ├─ 加密后的基密码保险库
+│  ├─ KDF 参数
+│  ├─ 每站点账号标识
+│  └─ 每站点密码策略覆盖
+└─ pkg
+   └─ Passworder Core 的 WASM 产物
 ```
 
-## Vault Encryption
+## 保险库加密
 
-The mnemonic must never be stored in plaintext.
+基密码不能明文保存。
 
-Recommended first version:
+当前版本：
 
-- KDF: PBKDF2-HMAC-SHA256.
-- Iterations: `600000`.
-- Salt: random 16 bytes.
-- Cipher: AES-256-GCM.
-- Nonce: random 12 bytes per encryption.
-- Storage: `chrome.storage.local`.
+- KDF: PBKDF2-HMAC-SHA256。
+- 迭代次数: `600000`。
+- Salt: 随机 16 字节。
+- Cipher: AES-256-GCM。
+- Nonce: 每次加密随机 12 字节。
+- 存储位置: `chrome.storage.local`。
 
-Stored vault record:
+保险库记录格式：
 
 ```json
 {
@@ -80,66 +91,49 @@ Stored vault record:
 }
 ```
 
-## Unlock Session
+## 解锁会话
 
-Default session policy:
+默认策略：
 
-- Unlock duration: 15 minutes.
-- Options: 5, 15, 30, or 60 minutes.
-- Manual lock button required.
-- Browser restart, extension reload, or service worker reset means locked.
-- Decrypted mnemonic remains only in background memory.
-- Content scripts never receive the mnemonic.
+- 默认解锁 15 分钟。
+- 可选 5、15、30、60 分钟。
+- 支持手动“立即锁定”。
+- 浏览器重启、插件重载、service worker 被回收后视为锁定。
+- 明文基密码只保存在 background 内存。
+- content script 永远不接收基密码。
 
-## Site Identity
+## 网站身份
 
-The extension should derive from a stable site identity, not the full URL.
+插件使用稳定网站身份派生密码，而不是完整 URL。
 
-Default behavior:
+默认行为：
 
 - `https://github.com/login` -> `github.com`
-- `https://accounts.google.com/...` -> `google.com` only if the user confirms
-  this mapping.
-- Subdomain handling must be visible and editable.
+- `https://login.example.co.uk` -> `example.co.uk`
 
-The extension should show the detected site before filling so users can catch
-phishing or unexpected subdomains.
+插件会显示识别到的网站身份，用户填充前应确认，避免钓鱼或异常子域名。
 
-## Fill Policy
+## 填充策略
 
-Autofill should require user action:
+填充需要用户动作：
 
-- Click extension button.
-- Choose account if multiple exist.
-- Press "Fill password" or use an explicit keyboard shortcut.
+- 点击插件按钮。
+- 多账号时选择账号标识。
+- 点击“生成并填充”或使用显式快捷键。
 
-Avoid silent page-load autofill. It increases phishing risk and exposes
-generated passwords to hostile pages.
+不做页面加载时的静默填充，避免钓鱼页面无感触发。
 
-## Per-Site Overrides
+## 每站点策略覆盖
 
-Most sites can use the default core policy:
+默认核心策略适合绝大多数网站：
 
-- 20 characters.
-- Lowercase, uppercase, digit, and symbol required.
+- 20 位。
+- 包含小写、大写、数字、符号。
 
-Some sites need overrides:
+少数网站可能需要覆盖：
 
-- Disable symbols.
-- Use a shorter maximum length.
-- Use a site-specific account label.
+- 禁用符号。
+- 限制最大长度。
+- 使用特定账号标识。
 
-Policy overrides are not secrets, but they affect deterministic output. They
-must be stored per site so the same password can be reproduced later.
-
-## Minimal Milestone
-
-The first extension milestone should include:
-
-- Manifest V3 Chrome/Edge scaffold.
-- Rust core compiled to WASM.
-- Popup setup/unlock flow.
-- Encrypted mnemonic vault in `chrome.storage.local`.
-- Current-tab site detection.
-- Password generation and fill of the first visible password field.
-- Manual lock and timeout lock.
+策略覆盖不是秘密，但会影响确定性输出，必须按站点保存。

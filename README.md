@@ -1,36 +1,45 @@
 # Passworder Core
 
-Passworder Core is a pure Rust offline password derivation core. It turns a
-base secret, such as a generated mnemonic or any user-provided text, plus a
-service/app name into a deterministic password. No network sync is required:
-the same inputs and versioned algorithm produce the same password on every
-device.
+Passworder Core 是一个纯 Rust 离线确定性密码派生核心。它把“基密码”加上
+网站/应用名称转换成固定密码。基密码可以是生成的多词助记词，也可以是用户
+自己输入的一句话；中文、英文或任何语言文本都可以。
 
-The Rust crate remains the core implementation. iPhone apps, Android apps,
-mini programs, browser extensions, CLIs, or desktop frontends can wrap the Rust
-crate through native bindings, FFI, or WebAssembly.
+这个项目的核心目标是：不依赖联网同步，不保存每个网站的真实密码。用户只要
+在任意设备上输入同一个基密码、同一个网站名和同一套策略，就能得到同一个
+站点密码。
 
-An initial Chrome/Edge extension implementation lives in
-`extensions/chrome-edge`. It wraps this Rust core through WebAssembly.
+Chrome/Edge 插件实现位于 `extensions/chrome-edge`，通过 WebAssembly 调用
+同一个 Rust 核心。
 
-## Design Goals
+## 设计目标
 
-- Pure Rust core: no TypeScript or JavaScript implementation is kept.
-- Offline deterministic sync: users reproduce passwords from their base secret
-  and service name, without accounts or servers.
-- Portable targets: native desktop/server, Raspberry Pi, iOS, Android, and
-  WebAssembly-capable runtimes.
-- Lightweight package: small API surface, no runtime storage, no networking.
-- Stable open specification: algorithm details are documented so bindings or
-  other languages can verify against the same vectors.
+- 纯 Rust 核心：核心算法不依赖 TypeScript 或 JavaScript 实现。
+- 离线同步：基密码 + 网站身份即可复现站点密码。
+- 多端可封装：桌面、服务器、树莓派、iOS、Android、WASM 前端都可以绑定。
+- 轻量：无联网、无账号系统、无数据库。
+- 规范稳定：算法、规范化、盐编码和测试向量都有文档。
 
-## Rust Usage
+## 基密码
+
+基密码是所有站点密码的根。
+
+可用形式：
+
+- 生成的 24 词助记词。
+- 用户已有的传统助记词。
+- 一句足够长、私密、可记忆的话。
+- 中文、英文或任何语言文本。
+
+建议使用长句或生成助记词，不建议使用短 PIN、生日、常见诗句、公开名言或
+能被别人猜到的文本。
+
+## Rust 用法
 
 ```rust
 use passworder_core::{derive_password, DerivePasswordOptions};
 
 let result = derive_password(
-    &DerivePasswordOptions::new("correct horse battery staple", "github.com")
+    &DerivePasswordOptions::new("我在春天的河边记住一把不会联网的钥匙。", "github.com")
         .account("alice@example.com"),
 )?;
 
@@ -38,12 +47,20 @@ println!("{}", result.password);
 # Ok::<(), passworder_core::PassworderError>(())
 ```
 
-The default password policy generates a 20-character password and guarantees at
-least one lowercase letter, uppercase letter, digit, and symbol. This matches
-the common “uppercase + lowercase + number + symbol + minimum length” rule used
-by most modern sites.
+生成传统多词助记词：
 
-For stricter or older sites, pass a custom `PasswordPolicy`:
+```rust
+use passworder_core::generate_mnemonic;
+
+let phrase = generate_mnemonic(24)?;
+# Ok::<(), passworder_core::PassworderError>(())
+```
+
+默认密码策略生成 20 位密码，并保证至少包含一个小写字母、一个大写字母、
+一个数字和一个符号。绝大多数现代网站的“大小写 + 数字 + 符号 + 最小长度”
+规则可以直接满足。
+
+如果遇到老旧网站，可以自定义策略：
 
 ```rust
 use passworder_core::{derive_password, DerivePasswordOptions, PasswordPolicy};
@@ -61,16 +78,7 @@ let result = derive_password(
 # Ok::<(), passworder_core::PassworderError>(())
 ```
 
-Generate a mnemonic-like base secret:
-
-```rust
-use passworder_core::generate_mnemonic;
-
-let phrase = generate_mnemonic(24)?;
-# Ok::<(), passworder_core::PassworderError>(())
-```
-
-## Build And Test
+## 构建与测试
 
 ```sh
 cargo test
@@ -78,31 +86,35 @@ cargo test --no-default-features --lib
 cargo run --example derive
 ```
 
-The `--no-default-features --lib` test verifies the core derivation path
-without OS random generation. Use the default features for normal native
-applications.
+`--no-default-features --lib` 用于验证不依赖系统随机数的核心派生路径。
 
-## Portability
+## 插件
 
-Rust can be compiled for native and embedded-like targets, but each platform
-still needs its own binding layer:
+Chrome/Edge 插件位于：
 
-- iOS: static library plus Swift binding.
-- Android: `cdylib` plus JNI or UniFFI.
-- Browser/extensions: `wasm32-unknown-unknown` plus a JS/WASM wrapper.
-- Raspberry Pi: native Linux ARM build.
-- Node/Python/Go/etc.: FFI, WASM, or language-specific binding.
+```text
+extensions/chrome-edge
+```
 
-The crate exports `rlib`, `staticlib`, and `cdylib` so downstream projects can
-choose the binding strategy.
+打包 release：
 
-## Security Notes
+```powershell
+.\scripts\package-extension.ps1 -Version 0.2.0
+```
 
-The base secret is the root of all derived passwords. Users must keep it
-private and backed up. If the base secret is weak, all derived passwords are
-weak. Prefer the default generated mnemonic length or another high-entropy
-secret.
+Edge/Chrome 加载方式：
 
-This library is deterministic by design. Changing the service, account,
-context, algorithm version, policy, or iteration count changes the derived
-password.
+1. 打开 `edge://extensions` 或 `chrome://extensions`。
+2. 开启“开发人员模式”。
+3. 点击“加载解压缩”。
+4. 选择 `releases/passworder-chrome-edge-v0.2.0`。
+
+注意：浏览器不能直接通过“加载解压缩”选择 `.zip`，需要选择解压后的目录。
+
+## 安全说明
+
+基密码是所有派生密码的根。请私密保存并备份。如果基密码很弱，所有派生密码
+都会变弱。
+
+本项目是确定性派生工具。基密码、网站身份、账号标识、上下文、算法版本、
+迭代次数或密码策略发生变化，都会改变最终密码。

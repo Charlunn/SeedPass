@@ -370,6 +370,32 @@ mod tests {
     }
 
     #[test]
+    fn derives_from_any_language_sentence_base_secret() {
+        let sentence = "我在春天的河边记住一把不会联网的钥匙。";
+        let first = derive_password(
+            &DerivePasswordOptions::new(sentence, "example.com")
+                .account("alice")
+                .iterations(10_000),
+        )
+        .unwrap();
+        let second = derive_password(
+            &DerivePasswordOptions::new(sentence, "example.com")
+                .account("alice")
+                .iterations(10_000),
+        )
+        .unwrap();
+        let different_sentence = derive_password(
+            &DerivePasswordOptions::new("我在秋天的山上记住另一把钥匙。", "example.com")
+                .account("alice")
+                .iterations(10_000),
+        )
+        .unwrap();
+
+        assert_eq!(first.password, second.password);
+        assert_ne!(first.password, different_sentence.password);
+    }
+
+    #[test]
     fn default_policy_meets_common_site_requirements() {
         let result = derive_password(
             &DerivePasswordOptions::new("correct horse battery staple", "Example.com")

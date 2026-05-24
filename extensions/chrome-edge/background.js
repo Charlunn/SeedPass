@@ -42,7 +42,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     const settings = await getSiteSettings(site.identity);
     await fillCurrentTab(site, settings.account ?? "", settings.policy ?? DEFAULT_POLICY);
   } catch {
-    // Keyboard shortcut should not surface secrets or noisy errors.
+    // 快捷键失败时不弹出敏感信息或噪声错误。
   }
 });
 
@@ -79,7 +79,7 @@ async function handleMessage(message) {
       return {};
     }
     default:
-      throw new Error("Unknown message type.");
+      throw new Error("未知的插件请求。");
   }
 }
 
@@ -94,8 +94,8 @@ async function getState() {
 }
 
 async function setupVault(message) {
-  const baseSecret = requireNonEmpty(message.baseSecret, "Base secret");
-  const unlockPassword = requireNonEmpty(message.unlockPassword, "Unlock password");
+  const baseSecret = requireNonEmpty(message.baseSecret, "基密码");
+  const unlockPassword = requireNonEmpty(message.unlockPassword, "解锁密码");
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
   const vault = await encryptVault(baseSecret, unlockPassword);
   await storageSet(VAULT_KEY, vault);
@@ -104,11 +104,11 @@ async function setupVault(message) {
 }
 
 async function unlockVault(message) {
-  const unlockPassword = requireNonEmpty(message.unlockPassword, "Unlock password");
+  const unlockPassword = requireNonEmpty(message.unlockPassword, "解锁密码");
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
   const vault = await storageGet(VAULT_KEY);
   if (!vault) {
-    throw new Error("Vault is not set up.");
+    throw new Error("尚未创建保险库。");
   }
   const baseSecret = await decryptVault(vault, unlockPassword);
   unlockFor(baseSecret, timeoutMinutes);
@@ -141,7 +141,7 @@ async function fillCurrentTab(site, account, policy) {
     password
   });
   if (!response?.filled) {
-    throw new Error("No visible password field found.");
+    throw new Error("没有找到可见的密码输入框。");
   }
 }
 
@@ -173,7 +173,7 @@ function isUnlocked() {
 
 function assertUnlocked() {
   if (!isUnlocked()) {
-    throw new Error("Vault is locked.");
+    throw new Error("保险库已锁定。");
   }
 }
 
@@ -200,7 +200,7 @@ async function encryptVault(baseSecret, password) {
 
 async function decryptVault(vault, password) {
   if (vault.version !== 1 || vault.cipher !== "AES-256-GCM") {
-    throw new Error("Unsupported vault format.");
+    throw new Error("不支持的保险库格式。");
   }
 
   const salt = fromBase64(vault.salt);
@@ -216,7 +216,7 @@ async function decryptVault(vault, password) {
     );
     return decode(new Uint8Array(plaintext));
   } catch {
-    throw new Error("Unlock failed.");
+    throw new Error("解锁失败。");
   }
 }
 
@@ -236,12 +236,12 @@ async function deriveVaultKey(password, salt, iterations = 600000) {
 async function getCurrentSite() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !tab.url) {
-    throw new Error("No active tab.");
+    throw new Error("没有活动标签页。");
   }
 
   const url = new URL(tab.url);
   if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("Current page is not a website.");
+    throw new Error("当前页面不是普通网站。");
   }
 
   return {
@@ -292,7 +292,7 @@ function normalizePolicy(policy = {}) {
   };
 
   if (!Number.isInteger(normalized.length) || normalized.length < 8 || normalized.length > 64) {
-    throw new Error("Password length must be an integer from 8 to 64.");
+    throw new Error("密码长度必须是 8 到 64 之间的整数。");
   }
   if (
     !normalized.lowercase &&
@@ -300,7 +300,7 @@ function normalizePolicy(policy = {}) {
     !normalized.digits &&
     !normalized.symbols
   ) {
-    throw new Error("At least one character class must be enabled.");
+    throw new Error("至少需要启用一种字符类型。");
   }
   return normalized;
 }
@@ -313,7 +313,7 @@ function normalizeTimeout(value) {
 function requireNonEmpty(value, label) {
   const normalized = String(value ?? "").trim();
   if (!normalized) {
-    throw new Error(`${label} is required.`);
+    throw new Error(`${label}不能为空。`);
   }
   return normalized;
 }

@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Passworder",
-  "version": "0.1.0",
-  "description": "Offline deterministic password generator powered by Passworder Core.",
+  "name": "Passworder 密码器",
+  "version": "0.2.0",
+  "description": "基于助记词、句子或任意文本的离线确定性密码生成器。",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Passworder"
+    "default_title": "Passworder 密码器"
   },
   "background": {
     "service_worker": "background.js",
@@ -19,7 +19,7 @@
         "default": "Ctrl+Shift+L",
         "mac": "Command+Shift+L"
       },
-      "description": "Fill password for current site"
+      "description": "为当前网站填充密码"
     }
   },
   "content_security_policy": {

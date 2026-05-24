@@ -1,8 +1,8 @@
-# Build And Load
+# 构建与加载
 
-## Build Rust WASM
+## 构建 Rust WASM
 
-From the repository root:
+在仓库根目录执行：
 
 ```sh
 rustup target add wasm32-unknown-unknown --toolchain stable-x86_64-pc-windows-gnu
@@ -11,43 +11,44 @@ cargo +stable-x86_64-pc-windows-gnu build --release --target wasm32-unknown-unkn
 wasm-bindgen target/wasm32-unknown-unknown/release/passworder_core.wasm --target web --out-dir extensions/chrome-edge/pkg --out-name passworder_core
 ```
 
-On non-Windows systems, omit the explicit `+stable-x86_64-pc-windows-gnu` if
-your default Rust toolchain works.
+如果不是 Windows，且默认 Rust 工具链可用，可以省略显式的
+`+stable-x86_64-pc-windows-gnu`。
 
-## Load In Chrome Or Edge
+## 在 Edge 或 Chrome 中加载
 
-1. Open `chrome://extensions` or `edge://extensions`.
-2. Enable Developer mode.
-3. Choose "Load unpacked".
-4. Select `extensions/chrome-edge` during development, or select the unpacked
-   release directory created by `scripts/package-extension.ps1`.
+1. 打开 `edge://extensions` 或 `chrome://extensions`。
+2. 开启“开发人员模式”。
+3. 点击“加载解压缩”。
+4. 开发时选择 `extensions/chrome-edge`。
+5. 使用 release 产物时，选择 `releases/passworder-chrome-edge-v版本号`。
 
-Edge/Chrome do not install a raw `.zip` directly through "Load unpacked".
-Use the zip for distribution, then unzip it and select the extracted folder.
+Edge/Chrome 的“加载解压缩”不能直接选择 `.zip` 文件。`.zip` 用于分发，
+实际加载时需要先解压，然后选择解压后的文件夹。
 
-## Package Release Artifact
+## 打包 release 产物
 
-From the repository root:
+在仓库根目录执行：
 
 ```powershell
-.\scripts\package-extension.ps1 -Version 0.1.0
+.\scripts\package-extension.ps1 -Version 0.2.0
 ```
 
-This creates:
+将生成：
 
-- `releases/passworder-chrome-edge-v0.1.0.zip`
-- `releases/passworder-chrome-edge-v0.1.0/`
+- `releases/passworder-chrome-edge-v0.2.0.zip`
+- `releases/passworder-chrome-edge-v0.2.0/`
 
-## First Use
+## 首次使用
 
-1. Open any HTTPS login page.
-2. Click the Passworder extension icon.
-3. Paste or generate a base mnemonic.
-4. Set an unlock password/PIN.
-5. Click "Encrypt and unlock".
-6. Confirm the detected site identity.
-7. Click "Generate and fill".
+1. 打开任意 HTTPS 登录页。
+2. 点击 Passworder 插件图标。
+3. 粘贴或生成基密码。基密码可以是 24 词助记词，也可以是一句中文、英文或
+   任何语言的私密句子。
+4. 设置解锁密码 / PIN。
+5. 点击“加密保存并解锁”。
+6. 确认插件识别到的网站身份。
+7. 点击“生成并填充”。
 
-The encrypted mnemonic is stored in `chrome.storage.local`. The decrypted
-mnemonic is kept only in the background service worker memory until timeout,
-manual lock, extension reload, or browser restart.
+加密后的基密码会保存到 `chrome.storage.local`。解锁后的明文基密码只保留
+在 background service worker 内存中，直到超时、手动锁定、插件重载或浏览器
+重启。

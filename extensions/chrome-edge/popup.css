@@ -1,7 +1,7 @@
 :root {
   color: #1a1712;
   background: #f4efe4;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Microsoft YaHei", "Noto Serif SC", "Source Han Serif SC", serif;
 }
 
 body {
@@ -50,6 +50,13 @@ h2 {
 .message,
 small {
   color: #685842;
+}
+
+.hint {
+  color: #705f47;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: -4px 0 0;
 }
 
 .panel {

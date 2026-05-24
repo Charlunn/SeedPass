@@ -110,7 +110,7 @@ document.querySelector("#setup-submit").addEventListener("click", async () => {
     });
     elements.setupPassword.value = "";
     await refresh();
-    showMessage("Vault encrypted and unlocked.");
+    showMessage("保险库已加密保存并解锁。");
   });
 });
 
@@ -123,7 +123,7 @@ document.querySelector("#unlock-submit").addEventListener("click", async () => {
     });
     elements.unlockPassword.value = "";
     await refresh();
-    showMessage("Unlocked.");
+    showMessage("已解锁。");
   });
 });
 
@@ -135,7 +135,7 @@ document.querySelector("#fill-submit").addEventListener("click", async () => {
       account: elements.account.value.trim(),
       policy
     });
-    showMessage("Password filled.");
+    showMessage("密码已填充。");
   });
 });
 
@@ -143,7 +143,7 @@ document.querySelector("#lock-submit").addEventListener("click", async () => {
   await runAction(async () => {
     await sendMessage({ type: "lock" });
     await refresh();
-    showMessage("Locked.");
+    showMessage("已锁定。");
   });
 });
 
@@ -165,18 +165,20 @@ async function refresh() {
   hideAll();
 
   if (!state.hasVault) {
-    elements.status.textContent = "No vault yet. Create one locally.";
+    elements.status.textContent = "还没有本地保险库，请先创建。";
     elements.setupView.classList.remove("hidden");
     return;
   }
 
   if (!state.unlocked) {
-    elements.status.textContent = "Vault locked.";
+    elements.status.textContent = "保险库已锁定。";
     elements.unlockView.classList.remove("hidden");
     return;
   }
 
-  elements.status.textContent = `Unlocked until ${new Date(state.unlockedUntil).toLocaleTimeString()}.`;
+  elements.status.textContent = `已解锁，有效至 ${new Date(
+    state.unlockedUntil
+  ).toLocaleTimeString("zh-CN")}。`;
   elements.fillView.classList.remove("hidden");
   await loadSiteSettings();
 }
@@ -259,7 +261,7 @@ function showMessage(message, isError = false) {
 async function sendMessage(message) {
   const response = await chrome.runtime.sendMessage(message);
   if (!response?.ok) {
-    throw new Error(response?.error ?? "Extension request failed.");
+    throw new Error(response?.error ?? "插件请求失败。");
   }
   return response;
 }

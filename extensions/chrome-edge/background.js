@@ -1,7 +1,10 @@
 import initCore, { derivePassword } from "./pkg/passworder_core.js";
 
-const VAULT_KEY = "passworder:vault";
-const SETTINGS_KEY = "passworder:site-settings";
+const VAULT_KEY = "seedpass:vault";
+const LEGACY_VAULT_KEY = "passworder:vault";
+const RECORDS_KEY = "seedpass:records";
+const LEGACY_SETTINGS_KEY = "passworder:site-settings";
+const LANGUAGE_KEY = "seedpass:language";
 const DEFAULT_TIMEOUT_MINUTES = 15;
 const DEFAULT_POLICY = {
   length: 20,
@@ -33,16 +36,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== "fill-password") {
-    return;
-  }
-
+  if (command !== "fill-password") return;
   try {
     const site = await getCurrentSite();
-    const settings = await getSiteSettings(site.identity);
-    await fillCurrentTab(site, settings.account ?? "", settings.policy ?? DEFAULT_POLICY);
+    const records = await getRecordsForSite(site.identity);
+    const record = records[0] ?? createDefaultRecord(site.identity);
+    await fillCurrentTab(site, record);
   } catch {
-    // Shortcut failures should not expose secrets or noisy errors.
+    // Keep shortcut failures quiet.
   }
 });
 
@@ -57,65 +58,73 @@ async function handleMessage(message, sender) {
     case "lock":
       lockNow();
       return getState();
-    case "get-site-settings": {
+    case "get-language":
+      return { language: await getLanguage() };
+    case "set-language":
+      await storageSet(LANGUAGE_KEY, normalizeLanguage(message.language));
+      return { language: await getLanguage() };
+    case "get-site-records": {
       const site = await getCurrentSite();
-      const settings = await getSiteSettings(site.identity);
-      return { site, settings };
+      return { site, records: await getRecordsForSite(site.identity) };
     }
-    case "save-site-settings":
-      await saveSiteSettings(message.siteIdentity, {
-        account: message.account ?? "",
-        policy: normalizePolicy(message.policy)
-      });
+    case "get-all-records":
+      return { records: await getAllRecords() };
+    case "save-record":
+      return { record: await saveRecord(normalizeRecord(message.record)) };
+    case "delete-record":
+      await deleteRecord(message.recordId);
       return {};
-    case "fill-password": {
+    case "fill-record": {
       const site = await getCurrentSite();
-      const policy = normalizePolicy(message.policy);
-      await saveSiteSettings(site.identity, {
-        account: message.account ?? "",
-        policy
-      });
-      await fillCurrentTab(site, message.account ?? "", policy);
+      const record = await requireRecord(message.recordId, site.identity);
+      await fillCurrentTab(site, record);
       return {};
     }
     case "inline-state":
       return getInlineState(sender);
-    case "inline-fill":
-      return deriveForSender(sender);
-    case "inline-unlock-and-fill":
+    case "inline-fill": {
+      const site = getSiteFromSender(sender);
+      const record = await requireRecord(message.recordId, site.identity);
+      return { password: await deriveForRecord(record), site, record };
+    }
+    case "inline-unlock-and-fill": {
       await unlockVault({
         unlockPassword: message.pin,
         timeoutMinutes: message.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES
       });
-      return deriveForSender(sender);
+      const site = getSiteFromSender(sender);
+      const record = await requireRecord(message.recordId, site.identity);
+      return { password: await deriveForRecord(record), site, record };
+    }
     default:
-      throw new Error("\u672a\u77e5\u7684\u63d2\u4ef6\u8bf7\u6c42\u3002");
+      throw new Error("Unknown extension request.");
   }
 }
 
 async function getState() {
-  const vault = await storageGet(VAULT_KEY);
+  const vault = await getVault();
   return {
     hasVault: Boolean(vault),
     unlocked: isUnlocked(),
     unlockedUntil: isUnlocked() ? unlockedUntil : 0,
-    defaultTimeoutMinutes: DEFAULT_TIMEOUT_MINUTES
+    defaultTimeoutMinutes: DEFAULT_TIMEOUT_MINUTES,
+    language: await getLanguage()
   };
 }
 
 async function getInlineState(sender) {
   const site = getSiteFromSender(sender);
-  const settings = await getSiteSettings(site.identity);
-  const state = await getState();
-  return { site, settings, ...state };
+  const records = await getRecordsForSite(site.identity);
+  return { ...(await getState()), site, records };
 }
 
 async function setupVault(message) {
-  const baseSecret = requireNonEmpty(message.baseSecret, "\u57fa\u5bc6\u7801");
+  const baseSecret = requireNonEmpty(message.baseSecret, "Seed / 基密码");
   const unlockPassword = requirePin(message.unlockPassword);
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
   const vault = await encryptVault(baseSecret, unlockPassword);
   await storageSet(VAULT_KEY, vault);
+  await chrome.storage.local.remove(LEGACY_VAULT_KEY);
   unlockFor(baseSecret, timeoutMinutes);
   return getState();
 }
@@ -123,78 +132,159 @@ async function setupVault(message) {
 async function unlockVault(message) {
   const unlockPassword = requirePin(message.unlockPassword);
   const timeoutMinutes = normalizeTimeout(message.timeoutMinutes);
-  const vault = await storageGet(VAULT_KEY);
-  if (!vault) {
-    throw new Error("\u5c1a\u672a\u521b\u5efa\u4fdd\u9669\u5e93\u3002");
-  }
+  const vault = await getVault();
+  if (!vault) throw new Error("Vault is not set up. / 尚未创建保险库。");
   const baseSecret = await decryptVault(vault, unlockPassword);
   unlockFor(baseSecret, timeoutMinutes);
   return getState();
 }
 
-async function deriveForSender(sender) {
-  assertUnlocked();
-  const site = getSiteFromSender(sender);
-  const settings = await getSiteSettings(site.identity);
-  const password = await derivePasswordForSite(
-    site.identity,
-    settings.account ?? "",
-    settings.policy ?? DEFAULT_POLICY
-  );
-  return { password, site, settings };
-}
-
-async function fillCurrentTab(site, account, policy) {
-  const password = await derivePasswordForSite(site.identity, account, policy);
-
+async function fillCurrentTab(site, record) {
+  const password = await deriveForRecord(record);
   await chrome.scripting.executeScript({
     target: { tabId: site.tabId },
     files: ["content.js"]
   });
   const response = await chrome.tabs.sendMessage(site.tabId, {
-    type: "passworder-fill",
+    type: "seedpass-fill",
     password
   });
   if (!response?.filled) {
-    throw new Error("\u6ca1\u6709\u627e\u5230\u53ef\u89c1\u7684\u5bc6\u7801\u8f93\u5165\u6846\u3002");
+    throw new Error("No visible password field found. / 没有找到可见的密码输入框。");
   }
 }
 
-async function derivePasswordForSite(siteIdentityValue, account, policy) {
+async function deriveForRecord(record) {
   assertUnlocked();
   await ensureCore();
-  const normalizedPolicy = normalizePolicy(policy);
-
+  const policy = normalizePolicy(record.policy);
+  const generationValue = generationInput(record);
   return derivePassword(
     unlockedSecret,
-    siteIdentityValue,
-    account || undefined,
+    generationValue,
+    undefined,
     undefined,
     210000,
-    normalizedPolicy.length,
-    normalizedPolicy.lowercase,
-    normalizedPolicy.uppercase,
-    normalizedPolicy.digits,
-    normalizedPolicy.symbols
+    policy.length,
+    policy.lowercase,
+    policy.uppercase,
+    policy.digits,
+    policy.symbols
   );
+}
+
+function generationInput(record) {
+  if (record.mode === "account") {
+    return requireNonEmpty(record.accountLabel, "Account label / 账号标识");
+  }
+  return record.siteIdentity;
+}
+
+async function getVault() {
+  return (await storageGet(VAULT_KEY)) ?? (await storageGet(LEGACY_VAULT_KEY));
+}
+
+async function getAllRecords() {
+  const records = (await storageGet(RECORDS_KEY)) ?? [];
+  if (records.length > 0) return records;
+  return migrateLegacySettings();
+}
+
+async function getRecordsForSite(siteIdentityValue) {
+  const records = await getAllRecords();
+  return records
+    .filter((record) => record.siteIdentity === siteIdentityValue)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+async function requireRecord(recordId, siteIdentityValue) {
+  const records = await getRecordsForSite(siteIdentityValue);
+  const record = records.find((item) => item.id === recordId) ?? records[0];
+  if (record) return record;
+  const created = createDefaultRecord(siteIdentityValue);
+  return saveRecord(created);
+}
+
+async function saveRecord(record) {
+  const records = await getAllRecords();
+  const now = Date.now();
+  const next = {
+    ...record,
+    id: record.id || crypto.randomUUID(),
+    createdAt: record.createdAt || now,
+    updatedAt: now
+  };
+  const index = records.findIndex((item) => item.id === next.id);
+  if (index >= 0) records[index] = next;
+  else records.push(next);
+  await storageSet(RECORDS_KEY, records);
+  return next;
+}
+
+async function deleteRecord(recordId) {
+  const records = await getAllRecords();
+  await storageSet(
+    RECORDS_KEY,
+    records.filter((record) => record.id !== recordId)
+  );
+}
+
+async function migrateLegacySettings() {
+  const legacy = (await storageGet(LEGACY_SETTINGS_KEY)) ?? {};
+  const records = Object.entries(legacy).map(([siteIdentityValue, settings]) =>
+    normalizeRecord({
+      siteIdentity: siteIdentityValue,
+      accountLabel: settings.account ?? "",
+      note: settings.account ? "Imported legacy label / 旧版本账号标识" : "",
+      mode: "domain",
+      policy: settings.policy ?? DEFAULT_POLICY
+    })
+  );
+  if (records.length > 0) await storageSet(RECORDS_KEY, records);
+  return records;
+}
+
+function createDefaultRecord(siteIdentityValue) {
+  return normalizeRecord({
+    siteIdentity: siteIdentityValue,
+    accountLabel: "",
+    note: "",
+    mode: "domain",
+    policy: DEFAULT_POLICY
+  });
+}
+
+function normalizeRecord(record = {}) {
+  const siteIdentityValue = requireNonEmpty(record.siteIdentity, "Site / 网站");
+  const mode = record.mode === "account" ? "account" : "domain";
+  const accountLabel = String(record.accountLabel ?? "").trim();
+  if (mode === "account" && !accountLabel) {
+    throw new Error("Account label is required for account mode. / 按账号标识生成时必须填写账号标识。");
+  }
+  return {
+    id: record.id || "",
+    siteIdentity: siteIdentityValue,
+    accountLabel,
+    note: String(record.note ?? "").trim(),
+    mode,
+    policy: normalizePolicy(record.policy),
+    createdAt: Number(record.createdAt ?? 0),
+    updatedAt: Number(record.updatedAt ?? 0)
+  };
 }
 
 function unlockFor(baseSecret, timeoutMinutes) {
   unlockedSecret = baseSecret;
   unlockedUntil = Date.now() + timeoutMinutes * 60_000;
-  if (lockTimer) {
-    clearTimeout(lockTimer);
-  }
+  if (lockTimer) clearTimeout(lockTimer);
   lockTimer = setTimeout(lockNow, timeoutMinutes * 60_000);
 }
 
 function lockNow() {
   unlockedSecret = null;
   unlockedUntil = 0;
-  if (lockTimer) {
-    clearTimeout(lockTimer);
-    lockTimer = null;
-  }
+  if (lockTimer) clearTimeout(lockTimer);
+  lockTimer = null;
 }
 
 function isUnlocked() {
@@ -206,9 +296,7 @@ function isUnlocked() {
 }
 
 function assertUnlocked() {
-  if (!isUnlocked()) {
-    throw new Error("\u4fdd\u9669\u5e93\u5df2\u9501\u5b9a\u3002");
-  }
+  if (!isUnlocked()) throw new Error("Vault is locked. / 保险库已锁定。");
 }
 
 async function encryptVault(baseSecret, password) {
@@ -220,7 +308,6 @@ async function encryptVault(baseSecret, password) {
     key,
     encode(baseSecret)
   );
-
   return {
     version: 2,
     unlock: "six-digit-pin",
@@ -235,23 +322,18 @@ async function encryptVault(baseSecret, password) {
 
 async function decryptVault(vault, password) {
   if (![1, 2].includes(vault.version) || vault.cipher !== "AES-256-GCM") {
-    throw new Error("\u4e0d\u652f\u6301\u7684\u4fdd\u9669\u5e93\u683c\u5f0f\u3002");
+    throw new Error("Unsupported vault format. / 不支持的保险库格式。");
   }
-
-  const salt = fromBase64(vault.salt);
-  const nonce = fromBase64(vault.nonce);
-  const ciphertext = fromBase64(vault.ciphertext);
-  const key = await deriveVaultKey(password, salt, vault.iterations);
-
+  const key = await deriveVaultKey(password, fromBase64(vault.salt), vault.iterations);
   try {
     const plaintext = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: nonce },
+      { name: "AES-GCM", iv: fromBase64(vault.nonce) },
       key,
-      ciphertext
+      fromBase64(vault.ciphertext)
     );
     return decode(new Uint8Array(plaintext));
   } catch {
-    throw new Error("\u89e3\u9501\u5931\u8d25\u3002");
+    throw new Error("Unlock failed. / 解锁失败。");
   }
 }
 
@@ -278,15 +360,11 @@ function getSiteFromSender(sender) {
 }
 
 function getSiteFromTab(tab) {
-  if (!tab?.id || !tab.url) {
-    throw new Error("\u6ca1\u6709\u6d3b\u52a8\u6807\u7b7e\u9875\u3002");
-  }
-
+  if (!tab?.id || !tab.url) throw new Error("No active tab. / 没有活动标签页。");
   const url = new URL(tab.url);
   if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("\u5f53\u524d\u9875\u9762\u4e0d\u662f\u666e\u901a\u7f51\u7ad9\u3002");
+    throw new Error("Current page is not a website. / 当前页面不是普通网站。");
   }
-
   return {
     tabId: tab.id,
     url: tab.url,
@@ -298,10 +376,7 @@ function getSiteFromTab(tab) {
 function siteIdentity(hostname) {
   const lower = hostname.toLowerCase();
   const parts = lower.split(".").filter(Boolean);
-  if (parts.length <= 2) {
-    return lower;
-  }
-
+  if (parts.length <= 2) return lower;
   const secondLevelExceptions = new Set(["co", "com", "net", "org", "gov", "edu"]);
   const tld = parts.at(-1);
   const sld = parts.at(-2);
@@ -309,20 +384,6 @@ function siteIdentity(hostname) {
     return parts.slice(-3).join(".");
   }
   return parts.slice(-2).join(".");
-}
-
-async function getSiteSettings(siteIdentityValue) {
-  const all = (await storageGet(SETTINGS_KEY)) ?? {};
-  return all[siteIdentityValue] ?? { account: "", policy: DEFAULT_POLICY };
-}
-
-async function saveSiteSettings(siteIdentityValue, settings) {
-  if (!siteIdentityValue) {
-    return;
-  }
-  const all = (await storageGet(SETTINGS_KEY)) ?? {};
-  all[siteIdentityValue] = settings;
-  await storageSet(SETTINGS_KEY, all);
 }
 
 function normalizePolicy(policy = {}) {
@@ -333,9 +394,8 @@ function normalizePolicy(policy = {}) {
     digits: Boolean(policy.digits ?? DEFAULT_POLICY.digits),
     symbols: Boolean(policy.symbols ?? DEFAULT_POLICY.symbols)
   };
-
   if (!Number.isInteger(normalized.length) || normalized.length < 8 || normalized.length > 64) {
-    throw new Error("\u5bc6\u7801\u957f\u5ea6\u5fc5\u987b\u662f 8 \u5230 64 \u4e4b\u95f4\u7684\u6574\u6570\u3002");
+    throw new Error("Password length must be 8-64. / 密码长度必须是 8 到 64。");
   }
   if (
     !normalized.lowercase &&
@@ -343,9 +403,18 @@ function normalizePolicy(policy = {}) {
     !normalized.digits &&
     !normalized.symbols
   ) {
-    throw new Error("\u81f3\u5c11\u9700\u8981\u542f\u7528\u4e00\u79cd\u5b57\u7b26\u7c7b\u578b\u3002");
+    throw new Error("Enable at least one character type. / 至少启用一种字符类型。");
   }
   return normalized;
+}
+
+async function getLanguage() {
+  const saved = await storageGet(LANGUAGE_KEY);
+  return normalizeLanguage(saved ?? "auto");
+}
+
+function normalizeLanguage(value) {
+  return ["auto", "zh", "en"].includes(value) ? value : "auto";
 }
 
 function normalizeTimeout(value) {
@@ -355,17 +424,13 @@ function normalizeTimeout(value) {
 
 function requireNonEmpty(value, label) {
   const normalized = String(value ?? "").trim();
-  if (!normalized) {
-    throw new Error(`${label}\u4e0d\u80fd\u4e3a\u7a7a\u3002`);
-  }
+  if (!normalized) throw new Error(`${label} is required.`);
   return normalized;
 }
 
 function requirePin(value) {
   const pin = requireNonEmpty(value, "PIN");
-  if (!/^\d{6}$/.test(pin)) {
-    throw new Error("PIN \u5fc5\u987b\u662f 6 \u4f4d\u6570\u5b57\u3002");
-  }
+  if (!/^\d{6}$/.test(pin)) throw new Error("PIN must be 6 digits. / PIN 必须是 6 位数字。");
   return pin;
 }
 
@@ -391,9 +456,7 @@ function decode(value) {
 
 function toBase64(bytes) {
   let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
+  for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
 

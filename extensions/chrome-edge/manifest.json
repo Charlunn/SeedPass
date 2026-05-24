@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Passworder 密码器",
-  "version": "0.3.0",
-  "description": "基于助记词、句子或任意文本的离线确定性密码生成器。",
+  "name": "SeedPass",
+  "version": "0.4.0",
+  "description": "Offline password manager from one seed phrase. 一个基密码，离线复现所有网站密码。",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Passworder 密码器"
+    "default_title": "SeedPass"
   },
   "background": {
     "service_worker": "background.js",
@@ -26,7 +26,7 @@
         "default": "Ctrl+Shift+L",
         "mac": "Command+Shift+L"
       },
-      "description": "为当前网站填充密码"
+      "description": "Fill current site password / 填充当前网站密码"
     }
   },
   "content_security_policy": {

@@ -16,8 +16,36 @@
 
       <section id="setup-view" class="panel hidden">
         <h2>&#21019;&#24314;&#26412;&#22320;&#20445;&#38505;&#24211;</h2>
+        <div class="guide-card">
+          <strong>第一次使用怎么做？</strong>
+          <p>如果你已经有自己的助记词或私密句子，直接粘贴到下面即可，不需要点“生成”。SeedPass 只会把它加密保存在本机。</p>
+          <ol>
+            <li>输入自己的基密码，或选择让 SeedPass 生成一组新的。</li>
+            <li>设置 6 位 PIN，用来短时间解锁插件。</li>
+            <li>保存后，进入网站密码框即可点击建议填充。</li>
+          </ol>
+        </div>
+
+        <fieldset class="choice-field">
+          <legend>选择基密码来源</legend>
+          <label class="choice-card">
+            <input id="seed-mode-own" name="seed-mode" value="own" type="radio" checked />
+            <span>
+              <strong>我已有，自己输入</strong>
+              <small>推荐给已经有助记词、私密句子或固定基密码的用户。</small>
+            </span>
+          </label>
+          <label class="choice-card">
+            <input id="seed-mode-generate" name="seed-mode" value="generate" type="radio" />
+            <span>
+              <strong>帮我生成一组新的</strong>
+              <small>没有基密码时再使用。生成后请自己妥善保存。</small>
+            </span>
+          </label>
+        </fieldset>
+
         <label>
-          &#22522;&#23494;&#30721;&#65306;&#21161;&#35760;&#35789;&#12289;&#21477;&#23376;&#25110;&#20219;&#24847;&#35821;&#35328;&#25991;&#26412;
+          &#22522;&#23494;&#30721;
           <textarea
             id="setup-secret"
             rows="5"
@@ -25,11 +53,11 @@
             placeholder="&#20363;&#22914;&#65306;&#25105;&#22312;&#26149;&#22825;&#30340;&#27827;&#36793;&#35760;&#20303;&#19968;&#25226;&#19981;&#20250;&#32852;&#32593;&#30340;&#38053;&#21273;"
           ></textarea>
         </label>
-        <p class="hint">
-          &#20320;&#21487;&#20197;&#20351;&#29992;&#29983;&#25104;&#30340; 24
-          &#20010;&#33521;&#25991;&#35789;&#65292;&#20063;&#21487;&#20197;&#36755;&#20837;&#20013;&#25991;&#12289;&#33521;&#25991;&#25110;&#20219;&#20309;&#35821;&#35328;&#30340;&#19968;&#21477;&#35805;&#12290;
-        </p>
-        <button id="generate-secret" class="secondary">&#29983;&#25104; 24 &#35789;&#21161;&#35760;&#35789;</button>
+        <p id="seed-mode-help" class="hint"></p>
+        <div id="seed-generate-panel" class="generate-panel hidden">
+          <p class="hint">点击后会把一组新的 24 词基密码填入上面的输入框。请先保存到安全位置，再继续设置 PIN。</p>
+          <button id="generate-secret" class="secondary" type="button">&#29983;&#25104; 24 &#35789;&#21161;&#35760;&#35789;</button>
+        </div>
 
         <fieldset class="pin-field">
           <legend>&#35774;&#32622; 6 &#20301;&#25968;&#23383; PIN</legend>

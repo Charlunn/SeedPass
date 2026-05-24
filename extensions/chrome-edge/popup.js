@@ -80,6 +80,9 @@ const elements = {
   unlockView: document.querySelector("#unlock-view"),
   fillView: document.querySelector("#fill-view"),
   setupSecret: document.querySelector("#setup-secret"),
+  seedModeGenerate: document.querySelector("#seed-mode-generate"),
+  seedModeHelp: document.querySelector("#seed-mode-help"),
+  seedGeneratePanel: document.querySelector("#seed-generate-panel"),
   setupTimeout: document.querySelector("#setup-timeout"),
   unlockTimeout: document.querySelector("#unlock-timeout"),
   siteIdentity: document.querySelector("#site-identity"),
@@ -108,7 +111,13 @@ let siteRecords = [];
 
 document.querySelector("#generate-secret").addEventListener("click", () => {
   elements.setupSecret.value = generateMnemonic(24);
+  showMessage("已生成新的 24 词基密码。请先妥善保存，再继续设置 PIN。");
+  elements.setupSecret.focus();
 });
+
+for (const input of document.querySelectorAll('input[name="seed-mode"]')) {
+  input.addEventListener("change", updateSeedMode);
+}
 
 document.querySelector("#setup-submit").addEventListener("click", async () => {
   await runAction(async () => {
@@ -230,7 +239,8 @@ async function refresh() {
   if (!state.hasVault) {
     elements.status.textContent = "还没有本地保险库，请先创建。";
     elements.setupView.classList.remove("hidden");
-    focusPin("setup");
+    updateSeedMode();
+    focusSetupSecret();
     return;
   }
 
@@ -337,6 +347,14 @@ function updateModeHelp() {
     : "\u5f53\u524d\u8bb0\u5f55\u6309\u7f51\u7ad9\u751f\u6210\u3002\u8d26\u53f7\u6807\u8bc6\u548c\u5907\u6ce8\u53ea\u7528\u4e8e\u7ba1\u7406\uff0c\u4e0d\u6539\u53d8\u5bc6\u7801\u3002";
 }
 
+function updateSeedMode() {
+  const generating = elements.seedModeGenerate.checked;
+  elements.seedGeneratePanel.classList.toggle("hidden", !generating);
+  elements.seedModeHelp.textContent = generating
+    ? "当前选择：让 SeedPass 生成新的基密码。生成后一定要自己保存，之后换设备也要输入同一组词。"
+    : "当前选择：使用你自己的基密码。直接输入或粘贴即可，不需要点击生成助记词。";
+}
+
 function readPolicy() {
   return {
     length: Number(elements.policyLength.value),
@@ -419,6 +437,10 @@ function clearPin(name) {
 
 function focusPin(name) {
   setTimeout(() => pinGroups[name][0]?.focus(), 0);
+}
+
+function focusSetupSecret() {
+  setTimeout(() => elements.setupSecret?.focus(), 0);
 }
 
 async function runAction(action) {

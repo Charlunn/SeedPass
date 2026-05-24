@@ -96,6 +96,32 @@ small {
   line-height: 1.5;
 }
 
+.guide-card {
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.guide-card strong {
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.guide-card p,
+.guide-card li {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.guide-card ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .panel {
   background: rgba(255, 255, 255, 0.24);
   border: 1px solid rgba(74, 51, 24, 0.1);
@@ -181,7 +207,8 @@ button.secondary {
 }
 
 .pin-field,
-.mode-field {
+.mode-field,
+.choice-field {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   display: grid;
@@ -191,11 +218,54 @@ button.secondary {
 }
 
 .pin-field legend,
-.mode-field legend {
+.mode-field legend,
+.choice-field legend {
   color: var(--text);
   font-size: 12px;
   font-weight: 800;
   padding: 0 4px;
+}
+
+.choice-card {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(74, 51, 24, 0.12);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.choice-card input {
+  accent-color: var(--brand);
+  flex: 0 0 auto;
+  margin-top: 2px;
+  min-height: auto;
+  width: auto;
+}
+
+.choice-card span {
+  display: grid;
+  gap: 3px;
+}
+
+.choice-card strong {
+  font-size: 13px;
+}
+
+.choice-card small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.generate-panel {
+  background: rgba(255, 255, 255, 0.36);
+  border: 1px dashed rgba(155, 77, 21, 0.28);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 
 .pin-row {

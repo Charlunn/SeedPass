@@ -1,5 +1,7 @@
 # Passworder Core 规范
 
+中文 | [English](SPEC.en.md)
+
 ## 算法版本
 
 ```text

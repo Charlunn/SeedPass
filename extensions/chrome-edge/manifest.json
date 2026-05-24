@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SeedPass",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "一个基密码，离线复现所有网站密码。Offline passwords from one seed phrase.",
   "action": {
     "default_popup": "popup.html",

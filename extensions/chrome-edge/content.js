@@ -144,15 +144,17 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
     root.innerHTML = `
       <style>
         #passworder-inline-panel {
-          background: #fffaf0;
-          border: 1px solid rgba(55, 42, 24, 0.22);
-          border-radius: 14px;
-          box-shadow: 0 18px 50px rgba(25, 20, 12, 0.18);
+          background:
+            radial-gradient(circle at top right, rgba(255, 176, 66, 0.22), transparent 42%),
+            linear-gradient(145deg, #fffaf0, #eee2cf);
+          border: 1px solid rgba(74, 51, 24, 0.2);
+          border-radius: 18px;
+          box-shadow: 0 18px 48px rgba(25, 20, 12, 0.2);
           color: #1a1712;
           font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
           font-size: 13px;
-          max-width: 320px;
-          padding: 10px;
+          max-width: min(340px, calc(100vw - 16px));
+          padding: 12px;
           position: fixed;
           width: max-content;
           z-index: 2147483647;
@@ -169,30 +171,47 @@ if (!globalThis.__PASSWORDER_CONTENT_SCRIPT_LOADED__) {
           color: #5f503e;
           line-height: 1.45;
           margin-bottom: 8px;
-          max-width: 280px;
+          max-width: 300px;
+          overflow-wrap: anywhere;
         }
         .passworder-inline-action {
           background: #1d2b24;
-          border: 0;
+          border: 1px solid transparent;
           border-radius: 999px;
           color: #fff6e8;
           cursor: pointer;
+          display: block;
+          font-size: 12px;
           font-weight: 800;
+          line-height: 1.35;
+          margin-top: 7px;
+          min-height: 38px;
           padding: 8px 12px;
+          text-align: left;
+          white-space: normal;
+          width: 100%;
         }
         .passworder-pin-row {
-          display: flex;
-          gap: 6px;
+          display: grid;
+          gap: 7px;
+          grid-template-columns: repeat(6, 1fr);
+          margin-top: 8px;
         }
         .passworder-pin-box {
-          background: #fff;
+          background: rgba(255, 255, 255, 0.72);
           border: 1px solid rgba(55, 42, 24, 0.28);
-          border-radius: 9px;
+          border-radius: 10px;
           box-sizing: border-box;
           font-size: 18px;
-          height: 36px;
+          height: 38px;
+          outline: none;
           text-align: center;
-          width: 34px;
+          width: 100%;
+        }
+        .passworder-pin-box:focus {
+          background: #fffdf7;
+          border-color: rgba(155, 77, 21, 0.52);
+          box-shadow: 0 0 0 3px rgba(155, 77, 21, 0.12);
         }
         .passworder-status {
           color: #9f1d16;
